@@ -16,7 +16,7 @@ const tabs = [
 
 export default function TravelerDashboard() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [upcomingTrip, setUpcomingTrip] = useState(null);
@@ -96,7 +96,7 @@ export default function TravelerDashboard() {
           <TouchableOpacity style={styles.notificationBtn}>
             <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={logout} style={styles.avatarCircle}>
+          <TouchableOpacity onPress={() => router.push('/traveler/profile')} style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
           </TouchableOpacity>
         </View>
