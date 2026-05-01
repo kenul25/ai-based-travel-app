@@ -72,20 +72,19 @@ export default function DriverDashboard() {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <View style={styles.greetingRow}>
+        <View>
+          <Text style={styles.greetingSub}>Hello,</Text>
+          <Text style={styles.greetingTitle}>{user?.name?.split(' ')[0] || 'Driver'}</Text>
+        </View>
+
+        <View style={styles.topRight}>
+          <TouchableOpacity style={styles.notificationBtn}>
+            <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/driver/profile')} style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
           </TouchableOpacity>
-          <View>
-            <Text style={styles.greetingSub}>Hello,</Text>
-            <Text style={styles.greetingTitle}>{user?.name?.split(' ')[0] || 'Driver'}</Text>
-          </View>
         </View>
-
-        <TouchableOpacity style={styles.onlineToggle} onPress={() => setIsOnline(!isOnline)}>
-          <View style={[styles.statusDot, { backgroundColor: isOnline ? theme.success : theme.textMuted }]} />
-          <Text style={styles.onlineText}>{isOnline ? 'Online' : 'Offline'}</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -107,6 +106,11 @@ export default function DriverDashboard() {
             <Text style={styles.statValue}>{pendingBookings.length}</Text>
           </View>
         </View>
+
+        <TouchableOpacity style={styles.onlineToggle} onPress={() => setIsOnline(!isOnline)}>
+          <View style={[styles.statusDot, { backgroundColor: isOnline ? theme.success : theme.textMuted }]} />
+          <Text style={styles.onlineText}>{isOnline ? 'Online and accepting requests' : 'Offline'}</Text>
+        </TouchableOpacity>
 
         {isOnline && activeTrip ? (
           <View style={styles.activeTripBanner}>
@@ -241,12 +245,13 @@ export default function DriverDashboard() {
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
   topBar: { height: 80, paddingTop: 30, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.borderLight, backgroundColor: theme.bgPrimary },
-  greetingRow: { flexDirection: 'row', alignItems: 'center' },
-  avatarCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  topRight: { flexDirection: 'row', alignItems: 'center' },
+  notificationBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  avatarCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.primaryLight, justifyContent: 'center', alignItems: 'center' },
   avatarText: { color: theme.primaryDark, fontFamily: 'Inter', fontWeight: '600', fontSize: 13 },
   greetingSub: { fontSize: 11, color: theme.textMuted, fontFamily: 'Inter' },
   greetingTitle: { fontSize: 16, color: theme.textPrimary, fontFamily: 'Inter', fontWeight: '600' },
-  onlineToggle: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgSurface, borderWidth: 1, borderColor: theme.borderLight, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  onlineToggle: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgSurface, borderWidth: 1, borderColor: theme.borderLight, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginBottom: 14, marginHorizontal: 4 },
   statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   onlineText: { fontSize: 12, fontFamily: 'Inter', fontWeight: '500', color: theme.textPrimary },
   scrollContent: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 16 },

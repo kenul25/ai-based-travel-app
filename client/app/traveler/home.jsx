@@ -175,7 +175,7 @@ const createStyles = (theme) => StyleSheet.create({
   greetingSub: { fontFamily: 'Inter', fontSize: 12, color: theme.textMuted },
   greetingTitle: { fontFamily: 'Inter', fontSize: 17, color: theme.textPrimary, fontWeight: '600' },
   topRight: { flexDirection: 'row', alignItems: 'center' },
-  notificationBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  notificationBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   avatarCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.primaryLight, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontFamily: 'Inter', fontSize: 14, fontWeight: '600', color: theme.primaryDark },
   scrollContent: { paddingBottom: 100, paddingTop: 16 },
