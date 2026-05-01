@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import AdminTabBar from '../../components/admin/AdminTabBar';
 import api from '../../services/api';
 
 const fallbackStats = {
@@ -312,13 +313,14 @@ export default function AdminHomeScreen() {
           </View>
         </View>
       </ScrollView>
+      <AdminTabBar />
     </View>
   );
 }
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
-  scrollContent: { padding: 16, paddingTop: 58, paddingBottom: 32 },
+  scrollContent: { padding: 16, paddingTop: 58, paddingBottom: 94 },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 },
   headerTextBlock: { flex: 1, paddingRight: 12 },
   eyebrow: { fontSize: 11, color: theme.textMuted, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase' },
