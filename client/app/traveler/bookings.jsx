@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 const tabs = [
   { label: 'Home', icon: 'home-outline', route: '/traveler/home' },
@@ -29,6 +30,8 @@ const formatMoney = (value) => `LKR ${Number(value || 0).toLocaleString()}`;
 
 export default function TravelerBookingsScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -64,7 +67,7 @@ export default function TravelerBookingsScreen() {
           if (!isActive) router.push(tab.route);
         }}
       >
-        <Ionicons name={tab.icon} size={23} color={isActive ? '#0C6EFD' : '#94A3B8'} />
+        <Ionicons name={tab.icon} size={23} color={isActive ? theme.primary : theme.textMuted} />
         <Text style={isActive ? styles.tabTextActive : styles.tabText}>{tab.label}</Text>
         {isActive && <View style={styles.tabDot} />}
       </TouchableOpacity>
@@ -91,14 +94,14 @@ export default function TravelerBookingsScreen() {
 
         <View style={styles.detailGrid}>
           <View style={styles.detailItem}>
-            <Ionicons name="car-outline" size={17} color="#94A3B8" />
+            <Ionicons name="car-outline" size={17} color={theme.textMuted} />
             <View style={styles.detailTextGroup}>
               <Text style={styles.detailLabel}>Vehicle</Text>
               <Text style={styles.detailValue}>{vehicleName}</Text>
             </View>
           </View>
           <View style={styles.detailItem}>
-            <Ionicons name="person-outline" size={17} color="#94A3B8" />
+            <Ionicons name="person-outline" size={17} color={theme.textMuted} />
             <View style={styles.detailTextGroup}>
               <Text style={styles.detailLabel}>Driver</Text>
               <Text style={styles.detailValue}>{item.driver?.name || 'Assigned driver'}</Text>
@@ -119,7 +122,7 @@ export default function TravelerBookingsScreen() {
             {item.trip?._id ? (
               <TouchableOpacity style={styles.openTripBtn} onPress={() => router.push(`/traveler/itinerary/${item.trip._id}`)}>
                 <Text style={styles.openTripText}>View trip</Text>
-                <Ionicons name="chevron-forward" size={16} color="#0C6EFD" />
+                <Ionicons name="chevron-forward" size={16} color={theme.primary} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -134,7 +137,7 @@ export default function TravelerBookingsScreen() {
     return (
       <View style={styles.emptyState}>
         <View style={styles.emptyIcon}>
-          <Ionicons name="calendar-outline" size={28} color="#0C6EFD" />
+          <Ionicons name="calendar-outline" size={28} color={theme.primary} />
         </View>
         <Text style={styles.emptyTitle}>No bookings yet</Text>
         <Text style={styles.emptyText}>Book a vehicle from an itinerary and your driver requests will appear here.</Text>
@@ -190,48 +193,48 @@ export default function TravelerBookingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  eyebrow: { fontSize: 12, color: '#94A3B8', fontFamily: 'Inter' },
-  title: { fontSize: 24, fontFamily: 'Inter', fontWeight: '700', color: '#0F172A' },
-  headerButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#0C6EFD', alignItems: 'center', justifyContent: 'center' },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.borderLight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgPrimary },
+  eyebrow: { fontSize: 12, color: theme.textMuted, fontFamily: 'Inter' },
+  title: { fontSize: 24, fontFamily: 'Inter', fontWeight: '700', color: theme.textPrimary },
+  headerButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: 16, paddingBottom: 92 },
   emptyListContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 92 },
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
-  loadingText: { marginTop: 12, fontSize: 13, fontFamily: 'Inter', color: '#475569' },
+  loadingText: { marginTop: 12, fontSize: 13, fontFamily: 'Inter', color: theme.textSecondary },
   errorBox: { margin: 16, borderRadius: 12, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF0F0', padding: 12, flexDirection: 'row', alignItems: 'center' },
   errorText: { flex: 1, marginHorizontal: 8, color: '#991B1B', fontSize: 12, fontFamily: 'Inter' },
   retryText: { color: '#DC2626', fontSize: 12, fontFamily: 'Inter', fontWeight: '600' },
-  bookingCard: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 14, marginBottom: 12 },
+  bookingCard: { backgroundColor: theme.bgPrimary, borderWidth: 1, borderColor: theme.borderLight, borderRadius: 14, padding: 14, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
-  tripTitle: { color: '#0F172A', fontSize: 17, fontFamily: 'Inter', fontWeight: '700', marginRight: 12 },
-  dateText: { color: '#475569', fontSize: 12, fontFamily: 'Inter', marginTop: 4 },
+  tripTitle: { color: theme.textPrimary, fontSize: 17, fontFamily: 'Inter', fontWeight: '700', marginRight: 12 },
+  dateText: { color: theme.textSecondary, fontSize: 12, fontFamily: 'Inter', marginTop: 4 },
   statusBadge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   statusText: { fontSize: 10, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
   detailGrid: { gap: 10 },
-  detailItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 10 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgSurface, borderWidth: 1, borderColor: theme.borderLight, borderRadius: 10, padding: 10 },
   detailTextGroup: { marginLeft: 10, flex: 1 },
-  detailLabel: { color: '#94A3B8', fontSize: 11, fontFamily: 'Inter' },
-  detailValue: { color: '#0F172A', fontSize: 13, fontFamily: 'Inter', fontWeight: '600', marginTop: 2 },
-  cardFooter: { borderTopWidth: 1, borderTopColor: '#E2E8F0', marginTop: 12, paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  amountText: { color: '#0C6EFD', fontSize: 14, fontFamily: 'monospace', fontWeight: '700' },
+  detailLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter' },
+  detailValue: { color: theme.textPrimary, fontSize: 13, fontFamily: 'Inter', fontWeight: '600', marginTop: 2 },
+  cardFooter: { borderTopWidth: 1, borderTopColor: theme.borderLight, marginTop: 12, paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  amountText: { color: theme.primary, fontSize: 14, fontFamily: 'monospace', fontWeight: '700' },
   footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  payNowBtn: { backgroundColor: '#0C6EFD', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  payNowBtn: { backgroundColor: theme.primary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   payNowText: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter', fontWeight: '700' },
   paidText: { color: '#145C32', fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
   unpaidText: { color: '#92600A', fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
   openTripBtn: { flexDirection: 'row', alignItems: 'center' },
-  openTripText: { color: '#0C6EFD', fontSize: 12, fontFamily: 'Inter', fontWeight: '700', marginRight: 2 },
+  openTripText: { color: theme.primary, fontSize: 12, fontFamily: 'Inter', fontWeight: '700', marginRight: 2 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#EBF3FF', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  emptyTitle: { color: '#0F172A', fontSize: 17, fontFamily: 'Inter', fontWeight: '700' },
-  emptyText: { color: '#475569', fontSize: 13, fontFamily: 'Inter', textAlign: 'center', lineHeight: 20, marginTop: 6, marginBottom: 18 },
-  primaryButton: { height: 48, borderRadius: 12, backgroundColor: '#0C6EFD', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  emptyIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  emptyTitle: { color: theme.textPrimary, fontSize: 17, fontFamily: 'Inter', fontWeight: '700' },
+  emptyText: { color: theme.textSecondary, fontSize: 13, fontFamily: 'Inter', textAlign: 'center', lineHeight: 20, marginTop: 6, marginBottom: 18 },
+  primaryButton: { height: 48, borderRadius: 12, backgroundColor: theme.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontFamily: 'Inter', fontWeight: '600', marginLeft: 8 },
-  bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 62, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 62, backgroundColor: theme.bgPrimary, borderTopWidth: 1, borderTopColor: theme.borderLight, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   tabItem: { alignItems: 'center', justifyContent: 'center', position: 'relative', minWidth: 54 },
-  tabText: { color: '#94A3B8', fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
-  tabTextActive: { color: '#0C6EFD', fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '500' },
-  tabDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#0C6EFD', position: 'absolute', bottom: -8 },
+  tabText: { color: theme.textMuted, fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
+  tabTextActive: { color: theme.primary, fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '500' },
+  tabDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: theme.primary, position: 'absolute', bottom: -8 },
 });

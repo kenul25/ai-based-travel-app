@@ -1,11 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ImageBackground, Switch, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function ManageVehiclesScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -138,19 +141,19 @@ export default function ManageVehiclesScreen() {
 
       <View style={styles.bottomTabBar}>
         <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/home')}>
-          <Ionicons name="home-outline" size={24} color="#94A3B8" />
+          <Ionicons name="home-outline" size={24} color={theme.textMuted} />
           <Text style={styles.tabText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabItemActive}>
-          <Ionicons name="car" size={24} color="#0C6EFD" />
+          <Ionicons name="car" size={24} color={theme.primary} />
           <Text style={styles.tabTextActive}>Vehicles</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/earnings')}>
-          <Ionicons name="wallet-outline" size={24} color="#94A3B8" />
+          <Ionicons name="wallet-outline" size={24} color={theme.textMuted} />
           <Text style={styles.tabText}>Earnings</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/profile')}>
-          <Ionicons name="person-outline" size={24} color="#94A3B8" />
+          <Ionicons name="person-outline" size={24} color={theme.textMuted} />
           <Text style={styles.tabText}>Profile</Text>
         </TouchableOpacity>
       </View>
@@ -158,38 +161,38 @@ export default function ManageVehiclesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  headerTitle: { fontSize: 17, fontFamily: 'Inter', fontWeight: '600', color: '#0F172A' },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.borderLight, backgroundColor: theme.bgPrimary },
+  headerTitle: { fontSize: 17, fontFamily: 'Inter', fontWeight: '600', color: theme.textPrimary },
   addBtn: { backgroundColor: '#0C6EFD', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   addBtnText: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', marginLeft: 4 },
 
   emptyRequests: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-  emptyTitle: { fontSize: 16, fontFamily: 'Inter', fontWeight: '600', color: '#0F172A', marginTop: 16 },
-  emptyText: { fontSize: 13, color: '#94A3B8', fontFamily: 'Inter', textAlign: 'center', marginTop: 8 },
+  emptyTitle: { fontSize: 16, fontFamily: 'Inter', fontWeight: '600', color: theme.textPrimary, marginTop: 16 },
+  emptyText: { fontSize: 13, color: theme.textMuted, fontFamily: 'Inter', textAlign: 'center', marginTop: 8 },
 
   listContent: { paddingHorizontal: 16, paddingVertical: 16, paddingBottom: 90 },
-  vehicleCard: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
-  imageRow: { height: 140, backgroundColor: '#EBF3FF' },
+  vehicleCard: { backgroundColor: theme.bgPrimary, borderWidth: 1, borderColor: theme.borderLight, borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
+  imageRow: { height: 140, backgroundColor: theme.primaryLight },
   body: { padding: 14 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  regNumber: { fontSize: 16, fontFamily: 'monospace', color: '#0F172A', fontWeight: '600' },
-  brandModel: { fontSize: 13, fontFamily: 'Inter', color: '#475569', marginBottom: 12 },
+  regNumber: { fontSize: 16, fontFamily: 'monospace', color: theme.textPrimary, fontWeight: '600' },
+  brandModel: { fontSize: 13, fontFamily: 'Inter', color: theme.textSecondary, marginBottom: 12 },
   
   specsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  specPill: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  specPillText: { fontSize: 11, fontFamily: 'Inter', color: '#475569' },
-  priceText: { flex: 1, textAlign: 'right', fontSize: 13, fontFamily: 'monospace', color: '#0C6EFD', fontWeight: '600' },
+  specPill: { backgroundColor: theme.bgSurface, borderWidth: 1, borderColor: theme.borderLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  specPillText: { fontSize: 11, fontFamily: 'Inter', color: theme.textSecondary },
+  priceText: { flex: 1, textAlign: 'right', fontSize: 13, fontFamily: 'monospace', color: theme.primary, fontWeight: '600' },
 
-  footerRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#E2E8F0', padding: 12, gap: 10 },
+  footerRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.borderLight, padding: 12, gap: 10 },
   editBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1' },
   editBtnText: { color: '#475569', fontSize: 13, fontFamily: 'Inter', fontWeight: '600' },
   deleteBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#DC2626' },
   deleteBtnText: { color: '#DC2626', fontSize: 13, fontFamily: 'Inter', fontWeight: '600' },
-  bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, backgroundColor: theme.bgPrimary, borderTopWidth: 1, borderTopColor: theme.borderLight, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   tabItem: { alignItems: 'center', justifyContent: 'center' },
   tabItemActive: { alignItems: 'center', justifyContent: 'center' },
-  tabText: { color: '#94A3B8', fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
-  tabTextActive: { color: '#0C6EFD', fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '500' }
+  tabText: { color: theme.textMuted, fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
+  tabTextActive: { color: theme.primary, fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '500' }
 });

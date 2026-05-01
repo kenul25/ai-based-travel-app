@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 const filters = [
   { key: 'all', label: 'All' },
@@ -20,6 +21,8 @@ const formatDate = (value) => {
 
 export default function DriverEarningsScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [payments, setPayments] = useState([]);
   const [paidTotal, setPaidTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -82,19 +85,19 @@ export default function DriverEarningsScreen() {
   const renderBottomTabs = () => (
     <View style={styles.bottomTabBar}>
       <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/home')}>
-        <Ionicons name="home-outline" size={24} color="#94A3B8" />
+        <Ionicons name="home-outline" size={24} color={theme.textMuted} />
         <Text style={styles.tabText}>Home</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/vehicles')}>
-        <Ionicons name="car-outline" size={24} color="#94A3B8" />
+        <Ionicons name="car-outline" size={24} color={theme.textMuted} />
         <Text style={styles.tabText}>Vehicles</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.tabItemActive}>
-        <Ionicons name="wallet" size={24} color="#0C6EFD" />
+        <Ionicons name="wallet" size={24} color={theme.primary} />
         <Text style={styles.tabTextActive}>Earnings</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/profile')}>
-        <Ionicons name="person-outline" size={24} color="#94A3B8" />
+        <Ionicons name="person-outline" size={24} color={theme.textMuted} />
         <Text style={styles.tabText}>Profile</Text>
       </TouchableOpacity>
     </View>
@@ -209,53 +212,53 @@ export default function DriverEarningsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { paddingTop: 56, paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  eyebrow: { color: '#94A3B8', fontSize: 11, fontFamily: 'Inter', textAlign: 'center' },
-  headerTitle: { color: '#0F172A', fontSize: 18, fontFamily: 'Inter', fontWeight: '700', textAlign: 'center' },
-  refreshButton: { width: 38, height: 38, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { paddingTop: 56, paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.borderLight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgPrimary },
+  eyebrow: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', textAlign: 'center' },
+  headerTitle: { color: theme.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: '700', textAlign: 'center' },
+  refreshButton: { width: 38, height: 38, borderRadius: 10, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, alignItems: 'center', justifyContent: 'center' },
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
-  loadingText: { color: '#475569', fontSize: 13, fontFamily: 'Inter', marginTop: 10 },
+  loadingText: { color: theme.textSecondary, fontSize: 13, fontFamily: 'Inter', marginTop: 10 },
   scrollContent: { padding: 16, paddingBottom: 96 },
-  heroCard: { borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  heroLabel: { color: '#475569', fontSize: 12, fontFamily: 'Inter', fontWeight: '600' },
-  heroAmount: { color: '#0F172A', fontSize: 25, fontFamily: 'monospace', fontWeight: '700', marginTop: 6 },
-  heroMeta: { color: '#94A3B8', fontSize: 12, fontFamily: 'Inter', marginTop: 4 },
-  heroIcon: { width: 52, height: 52, borderRadius: 14, backgroundColor: '#EBF3FF', alignItems: 'center', justifyContent: 'center' },
+  heroCard: { borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  heroLabel: { color: theme.textSecondary, fontSize: 12, fontFamily: 'Inter', fontWeight: '600' },
+  heroAmount: { color: theme.textPrimary, fontSize: 25, fontFamily: 'monospace', fontWeight: '700', marginTop: 6 },
+  heroMeta: { color: theme.textMuted, fontSize: 12, fontFamily: 'Inter', marginTop: 4 },
+  heroIcon: { width: 52, height: 52, borderRadius: 14, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  statCard: { flex: 1, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12 },
-  statLabel: { color: '#94A3B8', fontSize: 11, fontFamily: 'Inter', marginBottom: 5 },
-  statValue: { color: '#0F172A', fontSize: 18, fontFamily: 'Inter', fontWeight: '700' },
-  statValueSmall: { color: '#0F172A', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' },
+  statCard: { flex: 1, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 12, padding: 12 },
+  statLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', marginBottom: 5 },
+  statValue: { color: theme.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: '700' },
+  statValueSmall: { color: theme.textPrimary, fontSize: 12, fontFamily: 'monospace', fontWeight: '700' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { color: '#0F172A', fontSize: 16, fontFamily: 'Inter', fontWeight: '700', marginRight: 8 },
+  sectionTitle: { color: theme.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: '700', marginRight: 8 },
   sectionCount: { overflow: 'hidden', backgroundColor: '#EBF3FF', color: '#0952C6', fontSize: 11, fontFamily: 'Inter', fontWeight: '700', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   filterRow: { flexGrow: 0, marginBottom: 14 },
-  filterChip: { borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8 },
-  filterChipActive: { borderColor: '#3D8EFF', backgroundColor: '#EBF3FF' },
-  filterChipText: { color: '#475569', fontSize: 12, fontFamily: 'Inter', fontWeight: '600' },
-  filterChipTextActive: { color: '#0952C6', fontSize: 12, fontFamily: 'Inter', fontWeight: '700' },
-  emptyBox: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', borderRadius: 14, padding: 24 },
-  emptyTitle: { color: '#0F172A', fontSize: 15, fontFamily: 'Inter', fontWeight: '700', marginTop: 10 },
-  emptyText: { color: '#475569', fontSize: 12, fontFamily: 'Inter', textAlign: 'center', lineHeight: 18, marginTop: 5 },
-  paymentCard: { borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 12 },
+  filterChip: { borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8 },
+  filterChipActive: { borderColor: theme.primaryMid, backgroundColor: theme.primaryLight },
+  filterChipText: { color: theme.textSecondary, fontSize: 12, fontFamily: 'Inter', fontWeight: '600' },
+  filterChipTextActive: { color: theme.primaryDark, fontSize: 12, fontFamily: 'Inter', fontWeight: '700' },
+  emptyBox: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 14, padding: 24 },
+  emptyTitle: { color: theme.textPrimary, fontSize: 15, fontFamily: 'Inter', fontWeight: '700', marginTop: 10 },
+  emptyText: { color: theme.textSecondary, fontSize: 12, fontFamily: 'Inter', textAlign: 'center', lineHeight: 18, marginTop: 5 },
+  paymentCard: { borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 14, padding: 14, marginBottom: 12 },
   paymentTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   paymentIcon: { width: 38, height: 38, borderRadius: 11, backgroundColor: '#EBF3FF', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   paymentBody: { flex: 1, paddingRight: 8 },
-  paymentTitle: { color: '#0F172A', fontSize: 14, fontFamily: 'Inter', fontWeight: '700' },
+  paymentTitle: { color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: '700' },
   paymentMeta: { color: '#64748B', fontSize: 11, fontFamily: 'Inter', marginTop: 3 },
   statusPill: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   statusPillText: { fontSize: 10, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
-  paymentBottomRow: { borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  paymentBottomRow: { borderTopWidth: 1, borderTopColor: theme.borderLight, paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   receiptLabel: { color: '#94A3B8', fontSize: 10, fontFamily: 'Inter' },
-  receiptNumber: { color: '#475569', fontSize: 11, fontFamily: 'monospace', marginTop: 3 },
+  receiptNumber: { color: theme.textSecondary, fontSize: 11, fontFamily: 'monospace', marginTop: 3 },
   amountGroup: { alignItems: 'flex-end', marginLeft: 10 },
   paymentAmount: { color: '#0C6EFD', fontSize: 14, fontFamily: 'monospace', fontWeight: '700' },
   methodText: { color: '#64748B', fontSize: 10, fontFamily: 'Inter', textTransform: 'capitalize', marginTop: 3 },
-  bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, backgroundColor: theme.bgPrimary, borderTopWidth: 1, borderTopColor: theme.borderLight, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   tabItem: { alignItems: 'center', justifyContent: 'center' },
   tabItemActive: { alignItems: 'center', justifyContent: 'center' },
-  tabText: { color: '#94A3B8', fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
-  tabTextActive: { color: '#0C6EFD', fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '500' },
+  tabText: { color: theme.textMuted, fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
+  tabTextActive: { color: theme.primary, fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '500' },
 });
