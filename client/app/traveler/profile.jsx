@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { themeOptions, useTheme } from '../../context/ThemeContext';
+import api from '../../services/api';
 
 const tabs = [
   { label: 'Home', icon: 'home-outline', route: '/traveler/home' },
@@ -36,6 +37,21 @@ export default function TravelerProfileScreen() {
     tripReminders: true,
     promotions: false,
   });
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  useEffect(() => {
+    setDraftValues({
+      name: user?.name || '',
+      phone: user?.phone || '',
+      email: user?.email || '',
+    });
+  }, [user]);
 
   const fields = [
     { key: 'name', label: 'Name', value: user?.name || 'Traveler', icon: 'person-outline' },
@@ -127,6 +143,79 @@ export default function TravelerProfileScreen() {
     </TouchableOpacity>
   );
 
+  const changePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      Alert.alert('Missing details', 'Please fill all password fields.');
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      Alert.alert('Weak password', 'New password must be at least 6 characters.');
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      Alert.alert('Password mismatch', 'New password and confirmation do not match.');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      await api.put('/auth/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswordForm(false);
+      Alert.alert('Password changed', 'Your account password has been updated.');
+    } catch (error) {
+      Alert.alert('Change failed', error.response?.data?.message || 'Could not update password.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const renderPasswordForm = () => {
+    if (!showPasswordForm) return null;
+
+    return (
+      <View style={styles.passwordPanel}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Current password"
+          placeholderTextColor={theme.textMuted}
+          secureTextEntry
+          value={passwordForm.currentPassword}
+          onChangeText={(value) => setPasswordForm((current) => ({ ...current, currentPassword: value }))}
+        />
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="New password"
+          placeholderTextColor={theme.textMuted}
+          secureTextEntry
+          value={passwordForm.newPassword}
+          onChangeText={(value) => setPasswordForm((current) => ({ ...current, newPassword: value }))}
+        />
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Confirm new password"
+          placeholderTextColor={theme.textMuted}
+          secureTextEntry
+          value={passwordForm.confirmPassword}
+          onChangeText={(value) => setPasswordForm((current) => ({ ...current, confirmPassword: value }))}
+        />
+        <View style={styles.passwordActions}>
+          <TouchableOpacity style={styles.cancelPasswordButton} onPress={() => setShowPasswordForm(false)}>
+            <Text style={styles.cancelPasswordText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.savePasswordButton, changingPassword && styles.disabledButton]} disabled={changingPassword} onPress={changePassword}>
+            <Text style={styles.savePasswordText}>{changingPassword ? 'Updating...' : 'Update password'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -187,7 +276,8 @@ export default function TravelerProfileScreen() {
         <View style={styles.card}>
           {renderSettingRow({ icon: 'card-outline', label: 'My saved cards', onPress: () => router.push('/traveler/payments') })}
           {renderSettingRow({ icon: 'receipt-outline', label: 'Payment history', onPress: () => router.push('/traveler/payments') })}
-          {renderSettingRow({ icon: 'lock-closed-outline', label: 'Change password', value: 'Secure' })}
+          {renderSettingRow({ icon: 'lock-closed-outline', label: 'Change password', value: showPasswordForm ? 'Open' : 'Secure', onPress: () => setShowPasswordForm((current) => !current) })}
+          {renderPasswordForm()}
           {renderSettingRow({ icon: 'help-circle-outline', label: 'Help center' })}
         </View>
 
@@ -238,6 +328,14 @@ const createStyles = (theme) => StyleSheet.create({
   settingLabel: { flex: 1, color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter' },
   settingValue: { color: theme.textMuted, fontSize: 12, fontFamily: 'Inter', marginRight: 6 },
   dangerText: { color: theme.error },
+  passwordPanel: { padding: 12, backgroundColor: theme.bgSurface, borderBottomWidth: 1, borderBottomColor: theme.borderLight },
+  passwordInput: { minHeight: 46, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 12, paddingHorizontal: 12, color: theme.textPrimary, fontSize: 13, fontFamily: 'Inter', marginBottom: 10 },
+  passwordActions: { flexDirection: 'row', gap: 10 },
+  cancelPasswordButton: { flex: 1, minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: theme.borderMed, alignItems: 'center', justifyContent: 'center' },
+  cancelPasswordText: { color: theme.textSecondary, fontSize: 13, fontFamily: 'Inter', fontWeight: '700' },
+  savePasswordButton: { flex: 1, minHeight: 42, borderRadius: 10, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
+  savePasswordText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter', fontWeight: '700' },
+  disabledButton: { opacity: 0.6 },
   signOutButton: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: theme.error, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   signOutText: { color: theme.error, fontSize: 14, fontFamily: 'Inter', fontWeight: '700', marginLeft: 8 },
   bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 62, backgroundColor: theme.bgPrimary, borderTopWidth: 1, borderTopColor: theme.borderLight, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },

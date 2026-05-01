@@ -33,8 +33,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.post('/auth/login', { email, password });
       await AsyncStorage.setItem('userToken', res.data.token);
-      setUser(res.data.user);
-      routeBasedOnRole(res.data.user.role);
+      const profileRes = await api.get('/auth/me');
+      const fullUser = profileRes.data.user || res.data.user;
+      setUser(fullUser);
+      routeBasedOnRole(fullUser.role);
       return { success: true };
     } catch (error) {
       return { 
@@ -48,8 +50,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.post('/auth/register', userData);
       await AsyncStorage.setItem('userToken', res.data.token);
-      setUser(res.data.user);
-      routeBasedOnRole(res.data.user.role);
+      const profileRes = await api.get('/auth/me');
+      const fullUser = profileRes.data.user || res.data.user;
+      setUser(fullUser);
+      routeBasedOnRole(fullUser.role);
       return { success: true };
     } catch (error) {
       return { 
