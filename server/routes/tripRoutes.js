@@ -4,6 +4,7 @@ const {
   createTrip, 
   getMyTrips, 
   getTripById, 
+  deleteTrip,
   generateAITripPlan,
   getAITripPlan,
   regenerateAITripPlan
@@ -20,5 +21,6 @@ router.get('/my', getMyTrips);
 router.get('/:id/ai-plan', getAITripPlan);
 router.get('/:id', getTripById);
 router.post('/:id/regenerate-ai-plan', regenerateAITripPlan);
+router.delete('/:id', deleteTrip);
 
 module.exports = router;

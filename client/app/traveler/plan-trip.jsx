@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Alert, Modal } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 
@@ -31,9 +31,12 @@ const formatDisplayDate = (value) => {
 
 export default function PlanTripScreen() {
   const router = useRouter();
+  const { tripId } = useLocalSearchParams();
+  const isEditing = !!tripId;
 
   const [step, setStep] = useState(1);
   const [generating, setGenerating] = useState(false);
+  const [loadingTrip, setLoadingTrip] = useState(false);
   const [destinationArea, setDestinationArea] = useState('');
   const [startingPoint, setStartingPoint] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -52,6 +55,46 @@ export default function PlanTripScreen() {
   const today = toDateOnly(new Date());
   const minSelectableDate = calendarTarget === 'end' && startDate ? toDateOnly(startDate) : today;
   const selectedCalendarDate = calendarTarget === 'start' ? startDate : endDate;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!tripId) return undefined;
+
+      let isActive = true;
+
+      const loadTrip = async () => {
+        try {
+          setLoadingTrip(true);
+          const res = await api.get(`/trips/${tripId}`);
+          const trip = res.data.trip;
+
+          if (!isActive || !trip) return;
+
+          setDestinationArea(trip.destinationArea || '');
+          setStartingPoint(trip.startingPoint || '');
+          setStartDate(trip.startDate ? toDateInputValue(new Date(trip.startDate)) : '');
+          setEndDate(trip.endDate ? toDateInputValue(new Date(trip.endDate)) : '');
+          setPassengers(Number(trip.passengers || 1));
+          setBudget(trip.budget ? String(trip.budget) : '');
+          setPace(trip.pace || 'balanced');
+          setPreferences(Array.isArray(trip.preferences) && trip.preferences.length ? trip.preferences : ['Nature']);
+          setConstraints(trip.constraints || '');
+          setStep(1);
+        } catch (error) {
+          Alert.alert('Trip not found', error.response?.data?.message || 'Could not load this trip.');
+          router.back();
+        } finally {
+          if (isActive) setLoadingTrip(false);
+        }
+      };
+
+      loadTrip();
+
+      return () => {
+        isActive = false;
+      };
+    }, [router, tripId])
+  );
 
   const togglePreference = (preference) => {
     setPreferences((current) =>
@@ -120,7 +163,7 @@ export default function PlanTripScreen() {
     setGenerating(true);
 
     try {
-      const res = await api.post('/trips/ai-plan', {
+      const payload = {
         destinationArea: destinationArea.trim(),
         startingPoint: startingPoint.trim(),
         startDate: parsedStartDate.toISOString(),
@@ -130,12 +173,16 @@ export default function PlanTripScreen() {
         preferences,
         pace,
         constraints: constraints.trim(),
-      });
+      };
+
+      const res = isEditing
+        ? await api.post(`/trips/${tripId}/regenerate-ai-plan`, payload)
+        : await api.post('/trips/ai-plan', payload);
 
       router.replace(`/traveler/itinerary/${res.data.trip._id}`);
     } catch (error) {
       console.error(error);
-      Alert.alert('AI plan failed', error.response?.data?.error || error.response?.data?.message || 'Please try again.');
+      Alert.alert(isEditing ? 'Update failed' : 'AI plan failed', error.response?.data?.error || error.response?.data?.message || 'Please try again.');
       setStep(2);
       setGenerating(false);
     }
@@ -226,7 +273,7 @@ export default function PlanTripScreen() {
 
   const renderStep1 = () => (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Where should AI plan?</Text>
+      <Text style={styles.title}>{isEditing ? 'Edit saved plan' : 'Where should AI plan?'}</Text>
 
       <Text style={styles.inputLabel}>Destination area</Text>
       <View style={styles.inputBox}>
@@ -284,7 +331,7 @@ export default function PlanTripScreen() {
 
   const renderStep2 = () => (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Trip details</Text>
+      <Text style={styles.title}>{isEditing ? 'Update trip details' : 'Trip details'}</Text>
 
       <View style={styles.dateRow}>
         <View style={[styles.dateCard, { marginRight: 5 }]}>
@@ -363,7 +410,7 @@ export default function PlanTripScreen() {
       />
 
       <TouchableOpacity style={styles.primaryButton} onPress={generateAIPlan}>
-        <Text style={styles.primaryButtonText}>Recommend places & build itinerary</Text>
+        <Text style={styles.primaryButtonText}>{isEditing ? 'Update saved trip plan' : 'Recommend places & build itinerary'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -373,7 +420,7 @@ export default function PlanTripScreen() {
       <View style={styles.pulseCircle}>
         {generating ? <ActivityIndicator color="#FFFFFF" /> : <Ionicons name="compass" size={32} color="#FFFFFF" />}
       </View>
-      <Text style={styles.generatingTitle}>Finding your best places...</Text>
+      <Text style={styles.generatingTitle}>{isEditing ? 'Updating your saved plan...' : 'Finding your best places...'}</Text>
       <Text style={styles.generatingSub}>Recommending places, building your route, and calculating budget.</Text>
       <View style={styles.progressBarBg}>
         <View style={styles.progressBarFill} />
@@ -389,13 +436,22 @@ export default function PlanTripScreen() {
         </TouchableOpacity>
       </View>
 
-      {!generating && renderStepIndicator()}
+      {loadingTrip ? (
+        <View style={styles.loadingTripBox}>
+          <ActivityIndicator color="#0C6EFD" />
+          <Text style={styles.loadingTripText}>Loading saved trip...</Text>
+        </View>
+      ) : (
+        <>
+          {!generating && renderStepIndicator()}
 
-      <View style={styles.content}>
-        {step === 1 && renderStep1()}
-        {step === 2 && renderStep2()}
-        {step === 3 && renderStep3()}
-      </View>
+          <View style={styles.content}>
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
+          </View>
+        </>
+      )}
       {renderCalendarModal()}
     </View>
   );
@@ -404,6 +460,8 @@ export default function PlanTripScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 10 },
+  loadingTripBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+  loadingTripText: { color: '#475569', fontSize: 13, fontFamily: 'Inter', marginTop: 10 },
   stepContainer: { alignItems: 'center', marginBottom: 20 },
   stepNodesRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '60%' },
   stepNode: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },

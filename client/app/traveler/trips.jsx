@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
@@ -73,6 +73,32 @@ export default function TripsScreen() {
     fetchTrips();
   };
 
+  const editTrip = (trip) => {
+    router.push({ pathname: '/traveler/plan-trip', params: { tripId: trip._id } });
+  };
+
+  const removeTrip = (trip) => {
+    Alert.alert(
+      'Remove saved trip?',
+      `This will remove ${getTripTitle(trip)} from your saved plans.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/trips/${trip._id}`);
+              setTrips((current) => current.filter((item) => item._id !== trip._id));
+            } catch (err) {
+              Alert.alert('Remove failed', err.response?.data?.message || 'Could not remove this trip.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderTab = (tab) => {
     const isActive = tab.label === 'Trip';
     return (
@@ -97,10 +123,8 @@ export default function TripsScreen() {
     const dayCount = getDayCount(item);
 
     return (
-      <TouchableOpacity
+      <View
         style={styles.tripCard}
-        activeOpacity={0.82}
-        onPress={() => router.push(`/traveler/itinerary/${item._id}`)}
       >
         <View style={styles.cardTopRow}>
           <View style={styles.aiBadge}>
@@ -138,12 +162,23 @@ export default function TripsScreen() {
 
         <View style={styles.cardFooter}>
           <Text style={styles.costText}>LKR {item.totalEstimatedCost || item.budget || 0}</Text>
-          <View style={styles.openRow}>
+          <TouchableOpacity style={styles.openRow} onPress={() => router.push(`/traveler/itinerary/${item._id}`)}>
             <Text style={styles.openText}>Open plan</Text>
             <Ionicons name="chevron-forward" size={16} color="#0C6EFD" />
-          </View>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.editButton} onPress={() => editTrip(item)}>
+            <Ionicons name="create-outline" size={16} color="#0C6EFD" />
+            <Text style={styles.editButtonText}>Edit plan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.removeButton} onPress={() => removeTrip(item)}>
+            <Ionicons name="trash-outline" size={16} color="#DC2626" />
+            <Text style={styles.removeButtonText}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
@@ -235,8 +270,13 @@ const styles = StyleSheet.create({
   metaText: { color: '#475569', fontSize: 11, fontFamily: 'Inter', marginLeft: 6, flexShrink: 1 },
   cardFooter: { borderTopWidth: 1, borderTopColor: '#E2E8F0', marginTop: 12, paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   costText: { color: '#0C6EFD', fontSize: 13, fontFamily: 'monospace', fontWeight: '700' },
-  openRow: { flexDirection: 'row', alignItems: 'center' },
+  openRow: { flexDirection: 'row', alignItems: 'center', minHeight: 32 },
   openText: { color: '#0C6EFD', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', marginRight: 2 },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  editButton: { flex: 1, minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: '#BFDBFE', backgroundColor: '#EBF3FF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  editButtonText: { color: '#0C6EFD', fontSize: 13, fontFamily: 'Inter', fontWeight: '600', marginLeft: 6 },
+  removeButton: { flex: 1, minHeight: 42, borderRadius: 10, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF0F0', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  removeButtonText: { color: '#DC2626', fontSize: 13, fontFamily: 'Inter', fontWeight: '600', marginLeft: 6 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#EBF3FF', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   emptyTitle: { color: '#0F172A', fontSize: 17, fontFamily: 'Inter', fontWeight: '700' },

@@ -1,4 +1,5 @@
 const Trip = require('../models/Trip');
+const Booking = require('../models/Booking');
 const Groq = require('groq-sdk');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -229,6 +230,27 @@ exports.getTripById = async (req, res) => {
     const trip = await Trip.findOne({ _id: req.params.id, user: req.user.id });
     if (!trip) return res.status(404).json({ message: 'Trip not found' });
     res.status(200).json({ success: true, trip });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+exports.deleteTrip = async (req, res) => {
+  try {
+    const trip = await Trip.findOne({ _id: req.params.id, user: req.user.id });
+    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+
+    const activeBooking = await Booking.findOne({
+      trip: trip._id,
+      status: { $in: ['pending', 'accepted'] },
+    });
+
+    if (activeBooking) {
+      return res.status(400).json({ message: 'Cannot remove a trip with pending or accepted bookings.' });
+    }
+
+    await trip.deleteOne();
+    res.status(200).json({ success: true, message: 'Trip removed successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
