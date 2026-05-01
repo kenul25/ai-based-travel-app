@@ -1,15 +1,34 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ThemeContext = createContext();
+const THEME_STORAGE_KEY = 'themePreference';
+
+export const themeOptions = [
+  { key: 'light', label: 'Light Mode', icon: 'sunny-outline' },
+  { key: 'dark', label: 'Dark Mode', icon: 'moon-outline' },
+  { key: 'system', label: 'System Default', icon: 'phone-portrait-outline' },
+];
 
 export const ThemeProvider = ({ children }) => {
   const systemColorScheme = useColorScheme(); // 'light' or 'dark'
-  const [themeMode, setThemeMode] = useState(systemColorScheme || 'light');
+  const [themePreference, setThemePreferenceState] = useState('system');
 
   useEffect(() => {
-    setThemeMode(systemColorScheme || 'light');
-  }, [systemColorScheme]);
+    const loadThemePreference = async () => {
+      try {
+        const savedPreference = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+        if (['light', 'dark', 'system'].includes(savedPreference)) {
+          setThemePreferenceState(savedPreference);
+        }
+      } catch (_error) {
+        setThemePreferenceState('system');
+      }
+    };
+
+    loadThemePreference();
+  }, []);
 
   const lightTheme = {
     bgPrimary: '#FFFFFF',
@@ -57,10 +76,26 @@ export const ThemeProvider = ({ children }) => {
     borderMed: '#475569',
   };
 
-  const currentTheme = themeMode === 'light' ? lightTheme : darkTheme;
+  const resolvedThemeMode = themePreference === 'system' ? (systemColorScheme || 'light') : themePreference;
+  const currentTheme = resolvedThemeMode === 'light' ? lightTheme : darkTheme;
+
+  const setThemeMode = async (mode) => {
+    if (!['light', 'dark', 'system'].includes(mode)) return;
+
+    setThemePreferenceState(mode);
+    await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme: currentTheme, isDark: themeMode === 'dark', setThemeMode }}>
+    <ThemeContext.Provider
+      value={{
+        theme: currentTheme,
+        themeMode: resolvedThemeMode,
+        themePreference,
+        isDark: resolvedThemeMode === 'dark',
+        setThemeMode,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

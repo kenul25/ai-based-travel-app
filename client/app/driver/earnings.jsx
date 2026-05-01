@@ -93,7 +93,7 @@ export default function DriverEarningsScreen() {
         <Ionicons name="wallet" size={24} color="#0C6EFD" />
         <Text style={styles.tabTextActive}>Earnings</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.tabItem}>
+      <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/profile')}>
         <Ionicons name="person-outline" size={24} color="#94A3B8" />
         <Text style={styles.tabText}>Profile</Text>
       </TouchableOpacity>

@@ -6,21 +6,20 @@ import { useAuth } from '../../context/AuthContext';
 import { themeOptions, useTheme } from '../../context/ThemeContext';
 
 const tabs = [
-  { label: 'Home', icon: 'home-outline', route: '/traveler/home' },
-  { label: 'Trip', icon: 'map-outline', route: '/traveler/trips' },
-  { label: 'Bookings', icon: 'cart-outline', route: '/traveler/bookings' },
-  { label: 'Payments', icon: 'card-outline', route: '/traveler/payments' },
-  { label: 'Profile', icon: 'person', route: '/traveler/profile' },
+  { label: 'Home', icon: 'home-outline', route: '/driver/home' },
+  { label: 'Vehicles', icon: 'car-outline', route: '/driver/vehicles' },
+  { label: 'Earnings', icon: 'wallet-outline', route: '/driver/earnings' },
+  { label: 'Profile', icon: 'person', route: '/driver/profile' },
 ];
 
 const getInitials = (name) => {
-  if (!name) return 'TR';
+  if (!name) return 'DR';
   const parts = name.trim().split(' ');
   if (parts.length > 1) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   return parts[0].slice(0, 2).toUpperCase();
 };
 
-export default function TravelerProfileScreen() {
+export default function DriverProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { theme, themePreference, setThemeMode } = useTheme();
@@ -30,17 +29,19 @@ export default function TravelerProfileScreen() {
     name: user?.name || '',
     phone: user?.phone || '',
     email: user?.email || '',
+    licenseNumber: user?.licenseNumber || '',
   });
-  const [notifications, setNotifications] = useState({
+  const [settings, setSettings] = useState({
     bookingAlerts: true,
-    tripReminders: true,
-    promotions: false,
+    tripUpdates: true,
+    availabilityReminders: false,
   });
 
   const fields = [
-    { key: 'name', label: 'Name', value: user?.name || 'Traveler', icon: 'person-outline' },
+    { key: 'name', label: 'Name', value: user?.name || 'Driver', icon: 'person-outline' },
     { key: 'phone', label: 'Phone', value: user?.phone || 'Add phone number', icon: 'call-outline' },
-    { key: 'email', label: 'Email', value: user?.email || 'traveler account', icon: 'mail-outline', verified: true },
+    { key: 'email', label: 'Email', value: user?.email || 'driver account', icon: 'mail-outline', verified: true },
+    { key: 'licenseNumber', label: 'License number', value: user?.licenseNumber || 'Pending profile update', icon: 'id-card-outline' },
   ];
 
   const renderTab = (tab) => {
@@ -53,7 +54,7 @@ export default function TravelerProfileScreen() {
           if (!isActive) router.push(tab.route);
         }}
       >
-        <Ionicons name={tab.icon} size={23} color={isActive ? theme.primary : theme.textMuted} />
+        <Ionicons name={tab.icon} size={24} color={isActive ? theme.primary : theme.textMuted} />
         <Text style={isActive ? styles.tabTextActive : styles.tabText}>{tab.label}</Text>
         {isActive && <View style={styles.tabDot} />}
       </TouchableOpacity>
@@ -105,7 +106,7 @@ export default function TravelerProfileScreen() {
     );
   };
 
-  const renderSettingRow = ({ icon, label, value, onPress, danger, toggleKey }) => (
+  const renderSettingRow = ({ icon, label, value, onPress, toggleKey, danger }) => (
     <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={!!toggleKey}>
       <View style={[styles.rowIcon, danger && styles.dangerIcon]}>
         <Ionicons name={icon} size={16} color={danger ? theme.error : theme.primary} />
@@ -113,8 +114,8 @@ export default function TravelerProfileScreen() {
       <Text style={[styles.settingLabel, danger && styles.dangerText]}>{label}</Text>
       {toggleKey ? (
         <Switch
-          value={notifications[toggleKey]}
-          onValueChange={(value) => setNotifications((current) => ({ ...current, [toggleKey]: value }))}
+          value={settings[toggleKey]}
+          onValueChange={(value) => setSettings((current) => ({ ...current, [toggleKey]: value }))}
           trackColor={{ false: theme.borderMed, true: theme.primary }}
           thumbColor={theme.bgPrimary}
         />
@@ -137,29 +138,29 @@ export default function TravelerProfileScreen() {
               <Ionicons name="camera-outline" size={14} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.title}>{user?.name || 'Traveler'}</Text>
+          <Text style={styles.title}>{user?.name || 'Driver'}</Text>
           <View style={styles.roleBadge}>
-            <Ionicons name="map-outline" size={12} color={theme.primaryDark} />
-            <Text style={styles.roleBadgeText}>Traveler</Text>
+            <Ionicons name="shield-checkmark-outline" size={12} color={theme.primaryDark} />
+            <Text style={styles.roleBadgeText}>{user?.isVerified ? 'Verified Driver' : 'Driver verification pending'}</Text>
           </View>
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>156</Text>
             <Text style={styles.statLabel}>Trips</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>8</Text>
-            <Text style={styles.statLabel}>Destinations</Text>
+            <Text style={styles.statValueMono}>LKR 1.2M</Text>
+            <Text style={styles.statLabel}>Earned</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>4</Text>
-            <Text style={styles.statLabel}>Reviews</Text>
+            <Text style={styles.statValue}>{Number(user?.rating || 4.8).toFixed(1)}</Text>
+            <Text style={styles.statLabel}>Rating</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>Profile</Text>
+        <Text style={styles.sectionLabel}>Driver profile</Text>
         <View style={styles.card}>{fields.map(renderFieldRow)}</View>
 
         <Text style={styles.sectionLabel}>Theme</Text>
@@ -179,16 +180,17 @@ export default function TravelerProfileScreen() {
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
           {renderSettingRow({ icon: 'notifications-outline', label: 'Booking alerts', toggleKey: 'bookingAlerts' })}
-          {renderSettingRow({ icon: 'alarm-outline', label: 'Trip reminders', toggleKey: 'tripReminders' })}
-          {renderSettingRow({ icon: 'pricetag-outline', label: 'Promotions', toggleKey: 'promotions' })}
+          {renderSettingRow({ icon: 'navigate-outline', label: 'Trip updates', toggleKey: 'tripUpdates' })}
+          {renderSettingRow({ icon: 'time-outline', label: 'Availability reminders', toggleKey: 'availabilityReminders' })}
         </View>
 
-        <Text style={styles.sectionLabel}>Account</Text>
+        <Text style={styles.sectionLabel}>Driver tools</Text>
         <View style={styles.card}>
-          {renderSettingRow({ icon: 'card-outline', label: 'My saved cards', onPress: () => router.push('/traveler/payments') })}
-          {renderSettingRow({ icon: 'receipt-outline', label: 'Payment history', onPress: () => router.push('/traveler/payments') })}
+          {renderSettingRow({ icon: 'car-outline', label: 'Vehicle management', onPress: () => router.push('/driver/vehicles') })}
+          {renderSettingRow({ icon: 'wallet-outline', label: 'Earnings history', onPress: () => router.push('/driver/earnings') })}
+          {renderSettingRow({ icon: 'star-outline', label: 'Reviews and rating', value: `${Number(user?.rating || 4.8).toFixed(1)} avg` })}
           {renderSettingRow({ icon: 'lock-closed-outline', label: 'Change password', value: 'Secure' })}
-          {renderSettingRow({ icon: 'help-circle-outline', label: 'Help center' })}
+          {renderSettingRow({ icon: 'help-circle-outline', label: 'Contact support' })}
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={logout}>
@@ -215,6 +217,7 @@ const createStyles = (theme) => StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statCard: { flex: 1, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, padding: 12, alignItems: 'center' },
   statValue: { color: theme.textPrimary, fontSize: 20, fontFamily: 'Inter', fontWeight: '700' },
+  statValueMono: { color: theme.textPrimary, fontSize: 13, fontFamily: 'monospace', fontWeight: '700', minHeight: 24, textAlignVertical: 'center' },
   statLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', marginTop: 3 },
   sectionLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'uppercase', marginBottom: 8, marginTop: 4 },
   card: { borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
@@ -241,7 +244,7 @@ const createStyles = (theme) => StyleSheet.create({
   signOutButton: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: theme.error, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   signOutText: { color: theme.error, fontSize: 14, fontFamily: 'Inter', fontWeight: '700', marginLeft: 8 },
   bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 62, backgroundColor: theme.bgPrimary, borderTopWidth: 1, borderTopColor: theme.borderLight, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  tabItem: { alignItems: 'center', justifyContent: 'center', position: 'relative', minWidth: 54 },
+  tabItem: { alignItems: 'center', justifyContent: 'center', position: 'relative', minWidth: 64 },
   tabText: { color: theme.textMuted, fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
   tabTextActive: { color: theme.primary, fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '600' },
   tabDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: theme.primary, position: 'absolute', bottom: -8 },

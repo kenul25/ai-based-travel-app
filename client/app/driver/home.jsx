@@ -226,7 +226,7 @@ export default function DriverDashboard() {
           <Ionicons name="wallet-outline" size={24} color="#94A3B8" />
           <Text style={styles.tabText}>Earnings</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem} onPress={logout}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/driver/profile')}>
           <Ionicons name="person-outline" size={24} color="#94A3B8" />
           <Text style={styles.tabText}>Profile</Text>
         </TouchableOpacity>
