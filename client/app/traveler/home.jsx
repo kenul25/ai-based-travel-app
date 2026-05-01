@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,9 +49,23 @@ export default function TravelerDashboard() {
     return parts[0][0];
   };
 
-  const formatDate = (value) => {
+  const formatShortDate = (value) => {
     if (!value) return 'Not set';
-    return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const getTripDays = (startDate, endDate) => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    return Number.isFinite(diff) && diff > 0 ? diff : 0;
+  };
+
+  const formatMoney = (value) => {
+    const amount = Number(value || 0);
+    if (!amount) return 'Not set';
+    return `LKR ${amount.toLocaleString()}`;
   };
 
   const renderTab = (tab) => {
@@ -98,29 +112,89 @@ export default function TravelerDashboard() {
             </View>
           ) : upcomingTrip ? (
             <View style={styles.tripCard}>
-              <ImageBackground
-                source={{ uri: 'https://images.unsplash.com/photo-1590005354167-6da97ce2311c?q=80&w=800' }}
-                style={styles.tripImageArea}
-              >
-                <View style={styles.darkOverlay} />
+              <View style={styles.tripCardHeader}>
+                <View style={styles.tripRouteIcon}>
+                  <Ionicons name="navigate-outline" size={20} color={theme.primary} />
+                </View>
+                <View style={styles.tripHeaderText}>
+                  <Text style={styles.tripEyebrow}>Upcoming trip</Text>
+                  <Text style={styles.tripTitleDest}>{upcomingTrip.destinationArea || 'AI Trip Plan'}</Text>
+                </View>
                 <View style={styles.tripBadge}>
                   <Text style={styles.tripBadgeText}>{upcomingTrip.status || 'Planning'}</Text>
                 </View>
-                <View style={styles.tripTextContainer}>
-                  <Text style={styles.tripTitleDest}>{upcomingTrip.destinationArea || 'AI Trip Plan'}</Text>
-                  <Text style={styles.tripDates}>{formatDate(upcomingTrip.startDate)} - {formatDate(upcomingTrip.endDate)}</Text>
+              </View>
+
+              <View style={styles.tripDateRow}>
+                <View style={styles.tripDateBlock}>
+                  <Text style={styles.tripDateLabel}>Start</Text>
+                  <Text style={styles.tripDateValue}>{formatShortDate(upcomingTrip.startDate)}</Text>
                 </View>
-              </ImageBackground>
-              <View style={styles.tripActionArea}>
-                <View style={styles.driverInfoRow}>
-                  <View style={styles.driverAvatar}>
-                    <Ionicons name="sparkles" size={12} color={theme.textMuted} />
+                <View style={styles.tripDateConnector}>
+                  <View style={styles.tripDateDot} />
+                  <View style={styles.tripDateLine} />
+                  <View style={styles.tripDateDot} />
+                </View>
+                <View style={styles.tripDateBlock}>
+                  <Text style={styles.tripDateLabel}>End</Text>
+                  <Text style={styles.tripDateValue}>{formatShortDate(upcomingTrip.endDate)}</Text>
+                </View>
+              </View>
+
+              <View style={styles.tripDetailsArea}>
+                <View style={styles.tripStatsRow}>
+                  <View style={styles.tripStatItem}>
+                    <View style={styles.tripStatIcon}>
+                      <Ionicons name="time-outline" size={15} color={theme.primary} />
+                    </View>
+                    <View>
+                      <Text style={styles.tripStatValue}>{getTripDays(upcomingTrip.startDate, upcomingTrip.endDate) || '-'}</Text>
+                      <Text style={styles.tripStatLabel}>Days</Text>
+                    </View>
                   </View>
-                  <Text style={styles.driverText}>{upcomingTrip.aiRecommendedPlaces?.length || 0} AI places - {upcomingTrip.passengers || 1} people</Text>
+                  <View style={styles.tripStatDivider} />
+                  <View style={styles.tripStatItem}>
+                    <View style={styles.tripStatIcon}>
+                      <Ionicons name="location-outline" size={15} color={theme.primary} />
+                    </View>
+                    <View>
+                      <Text style={styles.tripStatValue}>{upcomingTrip.aiRecommendedPlaces?.length || 0}</Text>
+                      <Text style={styles.tripStatLabel}>AI places</Text>
+                    </View>
+                  </View>
+                  <View style={styles.tripStatDivider} />
+                  <View style={styles.tripStatItem}>
+                    <View style={styles.tripStatIcon}>
+                      <Ionicons name="people-outline" size={15} color={theme.primary} />
+                    </View>
+                    <View>
+                      <Text style={styles.tripStatValue}>{upcomingTrip.passengers || 1}</Text>
+                      <Text style={styles.tripStatLabel}>People</Text>
+                    </View>
+                  </View>
                 </View>
-                <TouchableOpacity style={styles.viewPlanBtn} onPress={() => router.push(`/traveler/itinerary/${upcomingTrip._id}`)}>
-                  <Text style={styles.viewPlanText}>View plan</Text>
-                </TouchableOpacity>
+
+                <View style={styles.tripBudgetRow}>
+                  <View>
+                    <Text style={styles.tripBudgetLabel}>Estimated budget</Text>
+                    <Text style={styles.tripBudgetValue}>{formatMoney(upcomingTrip.totalEstimatedCost || upcomingTrip.budget)}</Text>
+                  </View>
+                  <View style={styles.tripPlacesPill}>
+                    <Ionicons name="sparkles-outline" size={13} color={theme.amber} />
+                    <Text style={styles.tripPlacesText}>{upcomingTrip.aiRecommendedPlaces?.length || 0} places</Text>
+                  </View>
+                </View>
+
+                <View style={styles.tripActionArea}>
+                  <TouchableOpacity style={styles.secondaryTripBtn} onPress={() => router.push('/traveler/bookings')}>
+                    <Ionicons name="car-outline" size={16} color={theme.primary} />
+                    <Text style={styles.secondaryTripText}>Vehicle</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.viewPlanBtn} onPress={() => router.push(`/traveler/itinerary/${upcomingTrip._id}`)}>
+                    <Text style={styles.viewPlanText}>View itinerary</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ) : (
@@ -184,19 +258,37 @@ const createStyles = (theme) => StyleSheet.create({
   tripLoadingCard: { minHeight: 150, borderRadius: 14, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, alignItems: 'center', justifyContent: 'center' },
   tripLoadingText: { color: theme.textSecondary, fontSize: 12, fontFamily: 'Inter', marginTop: 8 },
   tripCard: { borderRadius: 16, borderWidth: 1, borderColor: theme.borderLight, overflow: 'hidden', backgroundColor: theme.bgPrimary },
-  tripImageArea: { height: 140, justifyContent: 'space-between', padding: 12 },
-  darkOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' },
-  tripBadge: { alignSelf: 'flex-end', backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
-  tripBadgeText: { color: '#145C32', fontFamily: 'Inter', fontSize: 11, fontWeight: '500' },
-  tripTextContainer: { zIndex: 1 },
-  tripTitleDest: { color: '#FFFFFF', fontSize: 18, fontFamily: 'Inter', fontWeight: '600' },
-  tripDates: { color: '#F1F5F9', fontSize: 13, fontFamily: 'Inter', marginTop: 4 },
-  tripActionArea: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, backgroundColor: theme.bgPrimary },
-  driverInfoRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  driverAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: theme.bgMuted, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
-  driverText: { color: theme.textSecondary, fontSize: 13, fontFamily: 'Inter', fontWeight: '500', flexShrink: 1 },
-  viewPlanBtn: { backgroundColor: theme.primaryLight, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
-  viewPlanText: { color: theme.primary, fontSize: 13, fontFamily: 'Inter', fontWeight: '600' },
+  tripCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderLight },
+  tripRouteIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  tripHeaderText: { flex: 1 },
+  tripEyebrow: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
+  tripTitleDest: { color: theme.textPrimary, fontSize: 20, lineHeight: 26, fontFamily: 'Inter', fontWeight: '800' },
+  tripBadge: { backgroundColor: theme.successLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  tripBadgeText: { color: theme.success, fontFamily: 'Inter', fontSize: 11, fontWeight: '800', textTransform: 'capitalize' },
+  tripDateRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 14 },
+  tripDateBlock: { flex: 1, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, padding: 12 },
+  tripDateLabel: { color: theme.textMuted, fontFamily: 'Inter', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+  tripDateValue: { color: theme.textPrimary, fontFamily: 'Inter', fontSize: 14, fontWeight: '800', marginTop: 3 },
+  tripDateConnector: { width: 42, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  tripDateDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.primary },
+  tripDateLine: { flex: 1, height: 1, backgroundColor: theme.borderMed },
+  tripDetailsArea: { padding: 14, backgroundColor: theme.bgPrimary },
+  tripStatsRow: { minHeight: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 13, paddingHorizontal: 12, marginBottom: 12 },
+  tripStatItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tripStatIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  tripStatValue: { color: theme.textPrimary, fontSize: 15, fontFamily: 'Inter', fontWeight: '800' },
+  tripStatLabel: { color: theme.textMuted, fontSize: 10, fontFamily: 'Inter', marginTop: 1 },
+  tripStatDivider: { width: 1, height: 34, backgroundColor: theme.borderLight, marginHorizontal: 8 },
+  tripBudgetRow: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 13 },
+  tripBudgetLabel: { color: theme.textMuted, fontFamily: 'Inter', fontSize: 11, fontWeight: '700' },
+  tripBudgetValue: { color: theme.textPrimary, fontFamily: 'JetBrains Mono', fontSize: 15, fontWeight: '800', marginTop: 3 },
+  tripPlacesPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.amberLight, borderWidth: 1, borderColor: theme.amber, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  tripPlacesText: { color: theme.amberDark, fontFamily: 'Inter', fontSize: 11, fontWeight: '800' },
+  tripActionArea: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  secondaryTripBtn: { height: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 11, paddingHorizontal: 13 },
+  secondaryTripText: { color: theme.primary, fontSize: 12, fontFamily: 'Inter', fontWeight: '800' },
+  viewPlanBtn: { flex: 1, height: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.primary, borderRadius: 11 },
+  viewPlanText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter', fontWeight: '800' },
   noTripCard: { borderRadius: 14, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, padding: 18, alignItems: 'center' },
   noTripIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   noTripTitle: { color: theme.textPrimary, fontSize: 15, fontFamily: 'Inter', fontWeight: '700' },
