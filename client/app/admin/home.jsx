@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import AdminTabBar from '../../components/admin/AdminTabBar';
@@ -66,8 +66,16 @@ const formatCompactNumber = (value) => {
 
 const formatCurrency = (value) => `LKR ${formatCompactNumber(value)}`;
 
+const getInitials = (name) => {
+  if (!name) return 'AD';
+  const parts = name.trim().split(' ');
+  if (parts.length > 1) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return parts[0].slice(0, 2).toUpperCase();
+};
+
 export default function AdminHomeScreen() {
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [stats, setStats] = useState(fallbackStats);
@@ -165,9 +173,15 @@ export default function AdminHomeScreen() {
             <View style={[styles.roleBadge, isSuperAdmin ? styles.superRoleBadge : styles.adminRoleBadge]}>
               <Text style={[styles.roleBadgeText, isSuperAdmin ? styles.superRoleText : styles.adminRoleText]}>{roleLabel}</Text>
             </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={logout} accessibilityLabel="Sign out">
-              <Ionicons name="log-out-outline" size={18} color={theme.error} />
-            </TouchableOpacity>
+            <View style={styles.headerIconRow}>
+              <TouchableOpacity style={styles.notificationButton} accessibilityLabel="Notifications">
+                <Ionicons name="notifications-outline" size={19} color={theme.textPrimary} />
+                <View style={styles.notificationDot} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.avatarButton} onPress={() => router.push('/admin/profile')} accessibilityLabel="Open admin profile">
+                <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -333,7 +347,11 @@ const createStyles = (theme) => StyleSheet.create({
   roleBadgeText: { fontFamily: 'Inter', fontSize: 11, fontWeight: '700' },
   superRoleText: { color: theme.amberDark },
   adminRoleText: { color: theme.primaryDark },
-  logoutButton: { width: 38, height: 38, borderRadius: 10, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, alignItems: 'center', justifyContent: 'center' },
+  headerIconRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  notificationButton: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  notificationDot: { position: 'absolute', top: 9, right: 9, width: 7, height: 7, borderRadius: 4, backgroundColor: theme.error, borderWidth: 1, borderColor: theme.bgSurface },
+  avatarButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: theme.primaryDark, fontFamily: 'Inter', fontSize: 13, fontWeight: '800' },
   loadingStrip: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, padding: 12, marginBottom: 14 },
   loadingText: { fontFamily: 'Inter', fontSize: 12, color: theme.textSecond },
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 18 },
