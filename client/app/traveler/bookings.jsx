@@ -1,0 +1,237 @@
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import api from '../../services/api';
+
+const tabs = [
+  { label: 'Home', icon: 'home-outline', route: '/traveler/home' },
+  { label: 'Trip', icon: 'map-outline', route: '/traveler/trips' },
+  { label: 'Bookings', icon: 'cart', route: '/traveler/bookings' },
+  { label: 'Payments', icon: 'card-outline', route: '/traveler/payments' },
+  { label: 'Profile', icon: 'person-outline', route: '/traveler/profile' },
+];
+
+const statusStyles = {
+  pending: { bg: '#FFF8EC', text: '#92600A' },
+  accepted: { bg: '#EDFBF4', text: '#145C32' },
+  rejected: { bg: '#FFF0F0', text: '#991B1B' },
+  completed: { bg: '#F1F5F9', text: '#475569' },
+  cancelled: { bg: '#FFF0F0', text: '#991B1B' },
+};
+
+const formatDate = (value) => {
+  if (!value) return 'Not set';
+  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatMoney = (value) => `LKR ${Number(value || 0).toLocaleString()}`;
+
+export default function TravelerBookingsScreen() {
+  const router = useRouter();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchBookings = useCallback(async ({ showLoader = false } = {}) => {
+    try {
+      if (showLoader) setLoading(true);
+      setError('');
+      const res = await api.get('/bookings/my-bookings');
+      setBookings(res.data.bookings || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not load bookings.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings({ showLoader: true });
+    }, [fetchBookings])
+  );
+
+  const renderTab = (tab) => {
+    const isActive = tab.label === 'Bookings';
+    return (
+      <TouchableOpacity
+        key={tab.label}
+        style={styles.tabItem}
+        onPress={() => {
+          if (!isActive) router.push(tab.route);
+        }}
+      >
+        <Ionicons name={tab.icon} size={23} color={isActive ? '#0C6EFD' : '#94A3B8'} />
+        <Text style={isActive ? styles.tabTextActive : styles.tabText}>{tab.label}</Text>
+        {isActive && <View style={styles.tabDot} />}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderBooking = ({ item }) => {
+    const status = item.status || 'pending';
+    const statusStyle = statusStyles[status] || statusStyles.pending;
+    const vehicleName = [item.vehicle?.brand, item.vehicle?.model].filter(Boolean).join(' ') || item.vehicle?.type || 'Vehicle';
+    const tripTitle = item.trip?.destinationArea || 'Trip booking';
+
+    return (
+      <View style={styles.bookingCard}>
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={styles.tripTitle}>{tripTitle}</Text>
+            <Text style={styles.dateText}>{formatDate(item.startDate)} - {formatDate(item.endDate)}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[styles.statusText, { color: statusStyle.text }]}>{status}</Text>
+          </View>
+        </View>
+
+        <View style={styles.detailGrid}>
+          <View style={styles.detailItem}>
+            <Ionicons name="car-outline" size={17} color="#94A3B8" />
+            <View style={styles.detailTextGroup}>
+              <Text style={styles.detailLabel}>Vehicle</Text>
+              <Text style={styles.detailValue}>{vehicleName}</Text>
+            </View>
+          </View>
+          <View style={styles.detailItem}>
+            <Ionicons name="person-outline" size={17} color="#94A3B8" />
+            <View style={styles.detailTextGroup}>
+              <Text style={styles.detailLabel}>Driver</Text>
+              <Text style={styles.detailValue}>{item.driver?.name || 'Assigned driver'}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.cardFooter}>
+          <Text style={styles.amountText}>{formatMoney(item.totalAmount)}</Text>
+          <View style={styles.footerActions}>
+            {['accepted', 'completed'].includes(item.status) && item.paymentStatus !== 'paid' ? (
+              <TouchableOpacity style={styles.payNowBtn} onPress={() => router.push('/traveler/payments')}>
+                <Text style={styles.payNowText}>Pay now</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={item.paymentStatus === 'paid' ? styles.paidText : styles.unpaidText}>{item.paymentStatus || 'unpaid'}</Text>
+            )}
+            {item.trip?._id ? (
+              <TouchableOpacity style={styles.openTripBtn} onPress={() => router.push(`/traveler/itinerary/${item.trip._id}`)}>
+                <Text style={styles.openTripText}>View trip</Text>
+                <Ionicons name="chevron-forward" size={16} color="#0C6EFD" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderEmpty = () => {
+    if (loading) return null;
+
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.emptyIcon}>
+          <Ionicons name="calendar-outline" size={28} color="#0C6EFD" />
+        </View>
+        <Text style={styles.emptyTitle}>No bookings yet</Text>
+        <Text style={styles.emptyText}>Book a vehicle from an itinerary and your driver requests will appear here.</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/traveler/trips')}>
+          <Ionicons name="map-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>Open trips</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.eyebrow}>Vehicles</Text>
+          <Text style={styles.title}>Bookings</Text>
+        </View>
+        <TouchableOpacity style={styles.headerButton} onPress={() => router.push('/traveler/trips')}>
+          <Ionicons name="map-outline" size={21} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      {error ? (
+        <View style={styles.errorBox}>
+          <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchBookings({ showLoader: true })}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      {loading ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator size="large" color="#0C6EFD" />
+          <Text style={styles.loadingText}>Loading bookings...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={bookings}
+          keyExtractor={(item) => item._id}
+          renderItem={renderBooking}
+          contentContainerStyle={bookings.length ? styles.listContent : styles.emptyListContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmpty}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchBookings(); }} tintColor="#0C6EFD" />}
+        />
+      )}
+
+      <View style={styles.bottomTabBar}>{tabs.map(renderTab)}</View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  eyebrow: { fontSize: 12, color: '#94A3B8', fontFamily: 'Inter' },
+  title: { fontSize: 24, fontFamily: 'Inter', fontWeight: '700', color: '#0F172A' },
+  headerButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#0C6EFD', alignItems: 'center', justifyContent: 'center' },
+  listContent: { padding: 16, paddingBottom: 92 },
+  emptyListContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 92 },
+  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
+  loadingText: { marginTop: 12, fontSize: 13, fontFamily: 'Inter', color: '#475569' },
+  errorBox: { margin: 16, borderRadius: 12, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF0F0', padding: 12, flexDirection: 'row', alignItems: 'center' },
+  errorText: { flex: 1, marginHorizontal: 8, color: '#991B1B', fontSize: 12, fontFamily: 'Inter' },
+  retryText: { color: '#DC2626', fontSize: 12, fontFamily: 'Inter', fontWeight: '600' },
+  bookingCard: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 14, marginBottom: 12 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  tripTitle: { color: '#0F172A', fontSize: 17, fontFamily: 'Inter', fontWeight: '700', marginRight: 12 },
+  dateText: { color: '#475569', fontSize: 12, fontFamily: 'Inter', marginTop: 4 },
+  statusBadge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
+  statusText: { fontSize: 10, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
+  detailGrid: { gap: 10 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 10 },
+  detailTextGroup: { marginLeft: 10, flex: 1 },
+  detailLabel: { color: '#94A3B8', fontSize: 11, fontFamily: 'Inter' },
+  detailValue: { color: '#0F172A', fontSize: 13, fontFamily: 'Inter', fontWeight: '600', marginTop: 2 },
+  cardFooter: { borderTopWidth: 1, borderTopColor: '#E2E8F0', marginTop: 12, paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  amountText: { color: '#0C6EFD', fontSize: 14, fontFamily: 'monospace', fontWeight: '700' },
+  footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  payNowBtn: { backgroundColor: '#0C6EFD', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  payNowText: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter', fontWeight: '700' },
+  paidText: { color: '#145C32', fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
+  unpaidText: { color: '#92600A', fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
+  openTripBtn: { flexDirection: 'row', alignItems: 'center' },
+  openTripText: { color: '#0C6EFD', fontSize: 12, fontFamily: 'Inter', fontWeight: '700', marginRight: 2 },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#EBF3FF', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  emptyTitle: { color: '#0F172A', fontSize: 17, fontFamily: 'Inter', fontWeight: '700' },
+  emptyText: { color: '#475569', fontSize: 13, fontFamily: 'Inter', textAlign: 'center', lineHeight: 20, marginTop: 6, marginBottom: 18 },
+  primaryButton: { height: 48, borderRadius: 12, backgroundColor: '#0C6EFD', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontFamily: 'Inter', fontWeight: '600', marginLeft: 8 },
+  bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 62, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  tabItem: { alignItems: 'center', justifyContent: 'center', position: 'relative', minWidth: 54 },
+  tabText: { color: '#94A3B8', fontSize: 10, fontFamily: 'Inter', marginTop: 4 },
+  tabTextActive: { color: '#0C6EFD', fontSize: 10, fontFamily: 'Inter', marginTop: 4, fontWeight: '500' },
+  tabDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#0C6EFD', position: 'absolute', bottom: -8 },
+});
