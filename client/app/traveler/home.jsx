@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import NotificationBell from '../../components/common/NotificationBell';
 
 const tabs = [
   { label: 'Home', icon: 'home', route: '/traveler/home' },
@@ -93,9 +94,7 @@ export default function TravelerDashboard() {
           <Text style={styles.greetingTitle}>{user?.name?.split(' ')[0] || 'Kasun'}</Text>
         </View>
         <View style={styles.topRight}>
-          <TouchableOpacity style={styles.notificationBtn}>
-            <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
-          </TouchableOpacity>
+          <NotificationBell style={styles.notificationBtn} />
           <TouchableOpacity onPress={() => router.push('/traveler/profile')} style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
           </TouchableOpacity>

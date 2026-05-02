@@ -1,6 +1,7 @@
 const Trip = require('../models/Trip');
 const Booking = require('../models/Booking');
 const Groq = require('groq-sdk');
+const { createNotification, createNotificationsForAdmins } = require('../utils/notifications');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
@@ -209,6 +210,17 @@ exports.createTrip = async (req, res) => {
       preferences,
       constraints
     });
+
+    await createNotification({
+      recipient: req.user.id,
+      title: 'Trip draft created',
+      message: `Your trip to ${destinationArea || 'your destination'} is ready to plan.`,
+      type: 'trip',
+      actionRoute: `/traveler/itinerary/${trip._id}`,
+      relatedModel: 'Trip',
+      relatedId: trip._id,
+    });
+
     res.status(201).json({ success: true, trip });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create trip', error: error.message });
@@ -303,6 +315,28 @@ exports.generateAITripPlan = async (req, res) => {
       status: 'draft',
     });
 
+    await createNotification({
+      recipient: req.user.id,
+      title: 'AI itinerary ready',
+      message: `Your ${destinationArea} itinerary has ${trip.aiRecommendedPlaces?.length || 0} recommended places.`,
+      type: 'trip',
+      priority: 'high',
+      actionRoute: `/traveler/itinerary/${trip._id}`,
+      relatedModel: 'Trip',
+      relatedId: trip._id,
+      metadata: { destinationArea },
+    });
+
+    await createNotificationsForAdmins({
+      title: 'AI trip generated',
+      message: `A traveler generated an AI plan for ${destinationArea}.`,
+      type: 'trip',
+      actionRoute: '/admin/trips',
+      relatedModel: 'Trip',
+      relatedId: trip._id,
+      metadata: { traveler: req.user.id, destinationArea },
+    });
+
     res.status(201).json({ success: true, trip, aiPlan });
   } catch (error) {
     console.error('AI Trip Plan Error:', error);
@@ -364,6 +398,18 @@ exports.regenerateAITripPlan = async (req, res) => {
     });
 
     await trip.save();
+
+    await createNotification({
+      recipient: req.user.id,
+      title: 'AI itinerary updated',
+      message: `Your ${trip.destinationArea} itinerary was regenerated.`,
+      type: 'trip',
+      actionRoute: `/traveler/itinerary/${trip._id}`,
+      relatedModel: 'Trip',
+      relatedId: trip._id,
+      metadata: { destinationArea: trip.destinationArea },
+    });
+
     res.status(200).json({ success: true, trip, aiPlan });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message: 'Failed to regenerate AI trip plan', error: error.message });

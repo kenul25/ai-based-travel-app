@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const Payment = require('../models/Payment');
 const Booking = require('../models/Booking');
 const SavedCard = require('../models/SavedCard');
+const { createNotification, createNotificationsForAdmins } = require('../utils/notifications');
 
 const populatePayment = (query) => query
   .populate('booking')
@@ -67,6 +68,30 @@ exports.createPayment = async (req, res) => {
     await markBookingPaid(booking._id, isCash ? 'unpaid' : 'paid');
     const populatedPayment = await populatePayment(Payment.findById(payment._id));
 
+    await createNotification({
+      recipient: booking.driver,
+      title: isCash ? 'Cash payment pending' : 'Payment received',
+      message: isCash
+        ? `${req.user.name || 'A traveler'} selected cash payment for ${booking.trip?.destinationArea || 'a booking'}.`
+        : `${req.user.name || 'A traveler'} paid LKR ${Number(payment.amount || 0).toLocaleString()} for ${booking.trip?.destinationArea || 'a booking'}.`,
+      type: 'payment',
+      priority: isCash ? 'normal' : 'high',
+      actionRoute: '/driver/earnings',
+      relatedModel: 'Payment',
+      relatedId: payment._id,
+      metadata: { paymentStatus: payment.status, booking: booking._id },
+    });
+
+    await createNotificationsForAdmins({
+      title: isCash ? 'Cash payment created' : 'Payment completed',
+      message: `${isCash ? 'Cash' : 'Card'} payment ${payment.receiptNumber} was created for LKR ${Number(payment.amount || 0).toLocaleString()}.`,
+      type: 'payment',
+      actionRoute: '/admin/payments',
+      relatedModel: 'Payment',
+      relatedId: payment._id,
+      metadata: { paymentStatus: payment.status, traveler: req.user.id, driver: booking.driver },
+    });
+
     res.status(201).json({ success: true, payment: populatedPayment });
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
@@ -123,6 +148,18 @@ exports.completePayment = async (req, res) => {
     await payment.save();
     await markBookingPaid(payment.booking, 'paid');
 
+    await createNotification({
+      recipient: payment.driver,
+      title: 'Payment completed',
+      message: `A pending payment was completed for LKR ${Number(payment.amount || 0).toLocaleString()}.`,
+      type: 'payment',
+      priority: 'high',
+      actionRoute: '/driver/earnings',
+      relatedModel: 'Payment',
+      relatedId: payment._id,
+      metadata: { paymentStatus: payment.status, booking: payment.booking },
+    });
+
     const populatedPayment = await populatePayment(Payment.findById(payment._id));
     res.status(200).json({ success: true, payment: populatedPayment });
   } catch (error) {
@@ -141,6 +178,29 @@ exports.refundPayment = async (req, res) => {
     payment.notes = req.body.reason || payment.notes;
     await payment.save();
     await markBookingPaid(payment.booking, 'refunded');
+
+    await createNotification({
+      recipient: payment.traveler,
+      title: 'Payment refunded',
+      message: `Your payment ${payment.receiptNumber || ''} was refunded.`,
+      type: 'payment',
+      priority: 'high',
+      actionRoute: '/traveler/payments',
+      relatedModel: 'Payment',
+      relatedId: payment._id,
+      metadata: { paymentStatus: payment.status, booking: payment.booking },
+    });
+
+    await createNotification({
+      recipient: payment.driver,
+      title: 'Payment refunded',
+      message: `A payment for LKR ${Number(payment.amount || 0).toLocaleString()} was refunded by admin.`,
+      type: 'payment',
+      actionRoute: '/driver/earnings',
+      relatedModel: 'Payment',
+      relatedId: payment._id,
+      metadata: { paymentStatus: payment.status, booking: payment.booking },
+    });
 
     const populatedPayment = await populatePayment(Payment.findById(payment._id));
     res.status(200).json({ success: true, payment: populatedPayment });

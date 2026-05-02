@@ -13,6 +13,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import AdminTabBar from '../../components/admin/AdminTabBar';
+import NotificationBell from '../../components/common/NotificationBell';
 import api from '../../services/api';
 
 const emptyStats = {
@@ -218,10 +219,7 @@ export default function AdminHomeScreen() {
             <Text style={styles.title}>Overview</Text>
           </View>
           <View style={styles.headerIconRow}>
-            <TouchableOpacity style={styles.notificationButton} accessibilityLabel="Notifications">
-              <Ionicons name="notifications-outline" size={19} color={theme.textPrimary} />
-              <View style={styles.notificationDot} />
-            </TouchableOpacity>
+            <NotificationBell size={38} iconSize={19} style={styles.notificationButton} />
             <TouchableOpacity style={styles.avatarButton} onPress={() => router.push('/admin/profile')} accessibilityLabel="Open admin profile">
               <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
             </TouchableOpacity>

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import NotificationBell from '../../components/common/NotificationBell';
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -78,9 +79,7 @@ export default function DriverDashboard() {
         </View>
 
         <View style={styles.topRight}>
-          <TouchableOpacity style={styles.notificationBtn}>
-            <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
-          </TouchableOpacity>
+          <NotificationBell style={styles.notificationBtn} />
           <TouchableOpacity onPress={() => router.push('/driver/profile')} style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
           </TouchableOpacity>
