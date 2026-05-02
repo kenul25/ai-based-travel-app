@@ -64,7 +64,7 @@ export default function RegisterScreen() {
             onPress={() => setRole('traveler')}
           >
             <View style={[styles.roleIconBox, { backgroundColor: role === 'traveler' ? theme.primary : theme.bgMuted }]}>
-              <Ionicons name="airplane-outline" size={18} color={role === 'traveler' ? '#FFF' : theme.textPrimary} />
+              <Ionicons name="map-outline" size={18} color={role === 'traveler' ? '#FFF' : theme.textPrimary} />
             </View>
             <Text style={[styles.roleTitle, { color: theme.textPrimary }]}>Traveler</Text>
             <Text style={[styles.roleDesc, { color: theme.textMuted }]}>Plan trips & book vehicles</Text>
