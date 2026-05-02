@@ -16,7 +16,7 @@ const getInitials = (name) => {
 
 export default function AdminProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const { theme, themePreference, setThemeMode } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [editingField, setEditingField] = useState('');
@@ -37,6 +37,7 @@ export default function AdminProfileScreen() {
     confirmPassword: '',
   });
   const [changingPassword, setChangingPassword] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const isSuperAdmin = user?.role === 'superadmin';
   const roleLabel = isSuperAdmin ? 'Super Admin' : 'Admin';
@@ -95,8 +96,8 @@ export default function AdminProfileScreen() {
     );
   };
 
-  const renderSettingRow = ({ icon, label, value, onPress, toggleKey, danger }) => (
-    <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={!!toggleKey}>
+  const renderSettingRow = ({ icon, label, value, onPress, toggleKey, danger, disabled }) => (
+    <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={!!toggleKey || disabled}>
       <View style={[styles.rowIcon, danger && styles.dangerIcon]}>
         <Ionicons name={icon} size={16} color={danger ? theme.error : theme.primary} />
       </View>
@@ -145,6 +146,31 @@ export default function AdminProfileScreen() {
     } finally {
       setChangingPassword(false);
     }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete admin account?',
+      'This will deactivate your admin account and sign you out. The last active super admin account cannot be deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingAccount(true);
+              const result = await deleteAccount();
+              if (!result.success) {
+                Alert.alert('Delete failed', result.message);
+              }
+            } finally {
+              setDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderPasswordForm = () => {
@@ -267,6 +293,18 @@ export default function AdminProfileScreen() {
           {renderSettingRow({ icon: 'lock-closed-outline', label: 'Change password', value: showPasswordForm ? 'Open' : 'Secure', onPress: () => setShowPasswordForm((current) => !current) })}
           {renderPasswordForm()}
           {renderSettingRow({ icon: 'key-outline', label: 'Role permissions', value: isSuperAdmin ? 'Full control' : 'Limited delete access' })}
+        </View>
+
+        <Text style={styles.sectionLabel}>Danger zone</Text>
+        <View style={styles.card}>
+          {renderSettingRow({
+            icon: 'trash-outline',
+            label: 'Delete account',
+            value: deletingAccount ? 'Deleting...' : 'Deactivate',
+            danger: true,
+            disabled: deletingAccount,
+            onPress: confirmDeleteAccount,
+          })}
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={logout}>

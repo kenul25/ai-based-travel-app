@@ -23,7 +23,7 @@ const getInitials = (name) => {
 
 export default function TravelerProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const { theme, themePreference, setThemeMode } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [editingField, setEditingField] = useState('');
@@ -44,6 +44,7 @@ export default function TravelerProfileScreen() {
     confirmPassword: '',
   });
   const [changingPassword, setChangingPassword] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     setDraftValues({
@@ -121,8 +122,8 @@ export default function TravelerProfileScreen() {
     );
   };
 
-  const renderSettingRow = ({ icon, label, value, onPress, danger, toggleKey }) => (
-    <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={!!toggleKey}>
+  const renderSettingRow = ({ icon, label, value, onPress, danger, toggleKey, disabled }) => (
+    <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={!!toggleKey || disabled}>
       <View style={[styles.rowIcon, danger && styles.dangerIcon]}>
         <Ionicons name={icon} size={16} color={danger ? theme.error : theme.primary} />
       </View>
@@ -173,6 +174,31 @@ export default function TravelerProfileScreen() {
     } finally {
       setChangingPassword(false);
     }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete account?',
+      'This will deactivate your account and sign you out. You will need support or an admin to restore access.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingAccount(true);
+              const result = await deleteAccount();
+              if (!result.success) {
+                Alert.alert('Delete failed', result.message);
+              }
+            } finally {
+              setDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderPasswordForm = () => {
@@ -279,6 +305,18 @@ export default function TravelerProfileScreen() {
           {renderSettingRow({ icon: 'lock-closed-outline', label: 'Change password', value: showPasswordForm ? 'Open' : 'Secure', onPress: () => setShowPasswordForm((current) => !current) })}
           {renderPasswordForm()}
           {renderSettingRow({ icon: 'help-circle-outline', label: 'Help center' })}
+        </View>
+
+        <Text style={styles.sectionLabel}>Danger zone</Text>
+        <View style={styles.card}>
+          {renderSettingRow({
+            icon: 'trash-outline',
+            label: 'Delete account',
+            value: deletingAccount ? 'Deleting...' : 'Deactivate',
+            danger: true,
+            disabled: deletingAccount,
+            onPress: confirmDeleteAccount,
+          })}
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={logout}>

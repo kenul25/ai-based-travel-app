@@ -127,6 +127,35 @@ exports.changePassword = async (req, res) => {
   }
 };
 
+// @route   DELETE /api/auth/me
+exports.deleteMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.role === 'superadmin') {
+      const activeSuperAdmins = await User.countDocuments({
+        role: 'superadmin',
+        isActive: true,
+        _id: { $ne: user._id },
+      });
+
+      if (activeSuperAdmins === 0) {
+        return res.status(400).json({ message: 'You cannot delete the last active super admin account' });
+      }
+    }
+
+    user.isActive = false;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Your account has been deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // @route   GET /api/auth/me
 exports.getMe = async (req, res) => {
   try {

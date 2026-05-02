@@ -69,6 +69,21 @@ export const AuthProvider = ({ children }) => {
     router.replace('/auth/login');
   };
 
+  const deleteAccount = async () => {
+    try {
+      await api.delete('/auth/me');
+      await AsyncStorage.removeItem('userToken');
+      setUser(null);
+      router.replace('/auth/login');
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Could not delete account',
+      };
+    }
+  };
+
   const routeBasedOnRole = (role) => {
     if (role === 'traveler') {
       router.replace('/traveler/home'); // TODO: Create this layout
@@ -80,7 +95,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

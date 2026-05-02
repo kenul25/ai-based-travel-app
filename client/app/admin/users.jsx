@@ -52,6 +52,8 @@ export default function AdminUsersScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isSuperAdmin = user?.role === 'superadmin';
 
@@ -94,6 +96,8 @@ export default function AdminUsersScreen() {
   const openCreateAdmin = () => {
     setForm(initialForm);
     setError('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setModalVisible(true);
   };
 
@@ -108,6 +112,8 @@ export default function AdminUsersScreen() {
       role: admin.role || 'admin',
     });
     setError('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setModalVisible(true);
   };
 
@@ -218,6 +224,38 @@ export default function AdminUsersScreen() {
     <TouchableOpacity key={key} style={statusFilter === key ? styles.statusFilterActive : styles.statusFilter} onPress={() => setStatusFilter(key)}>
       <Text style={statusFilter === key ? styles.statusFilterTextActive : styles.statusFilterText}>{label}</Text>
     </TouchableOpacity>
+  );
+
+  const renderModalInput = ({
+    icon,
+    value,
+    onChangeText,
+    placeholder,
+    keyboardType,
+    autoCapitalize,
+    secureTextEntry,
+    showToggle,
+    isVisible,
+    onToggle,
+  }) => (
+    <View style={styles.inputWrap}>
+      <Ionicons name={icon} size={18} color={theme.textMuted} style={styles.inputIcon} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.textMuted}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        secureTextEntry={secureTextEntry && !isVisible}
+        style={[styles.modalInput, showToggle && styles.modalInputWithAction]}
+      />
+      {showToggle ? (
+        <TouchableOpacity style={styles.eyeButton} onPress={onToggle} accessibilityLabel={isVisible ? 'Hide password' : 'Show password'}>
+          <Ionicons name={isVisible ? 'eye-off-outline' : 'eye-outline'} size={19} color={theme.textMuted} />
+        </TouchableOpacity>
+      ) : null}
+    </View>
   );
 
   const renderAccount = (account) => {
@@ -340,9 +378,27 @@ export default function AdminUsersScreen() {
               </TouchableOpacity>
             </View>
 
-            <TextInput value={form.name} onChangeText={(value) => setField('name', value)} placeholder="Full name" placeholderTextColor={theme.textMuted} style={styles.input} />
-            <TextInput value={form.email} onChangeText={(value) => setField('email', value)} placeholder="Email" placeholderTextColor={theme.textMuted} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
-            <TextInput value={form.phone} onChangeText={(value) => setField('phone', value)} placeholder="Phone optional" placeholderTextColor={theme.textMuted} style={styles.input} />
+            {renderModalInput({
+              icon: 'person-outline',
+              value: form.name,
+              onChangeText: (value) => setField('name', value),
+              placeholder: 'Full name',
+            })}
+            {renderModalInput({
+              icon: 'mail-outline',
+              value: form.email,
+              onChangeText: (value) => setField('email', value),
+              placeholder: 'Email Address',
+              autoCapitalize: 'none',
+              keyboardType: 'email-address',
+            })}
+            {renderModalInput({
+              icon: 'call-outline',
+              value: form.phone,
+              onChangeText: (value) => setField('phone', value),
+              placeholder: 'Phone number',
+              keyboardType: 'phone-pad',
+            })}
 
             <View style={styles.roleSelector}>
               {['admin', 'superadmin'].map((role) => {
@@ -363,8 +419,26 @@ export default function AdminUsersScreen() {
               })}
             </View>
 
-            <TextInput value={form.password} onChangeText={(value) => setField('password', value)} placeholder={form._id ? 'New password optional' : 'Password'} placeholderTextColor={theme.textMuted} secureTextEntry style={styles.input} />
-            <TextInput value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} placeholder="Confirm password" placeholderTextColor={theme.textMuted} secureTextEntry style={styles.input} />
+            {renderModalInput({
+              icon: 'lock-closed-outline',
+              value: form.password,
+              onChangeText: (value) => setField('password', value),
+              placeholder: form._id ? 'New password optional' : 'Password',
+              secureTextEntry: true,
+              showToggle: true,
+              isVisible: showPassword,
+              onToggle: () => setShowPassword((current) => !current),
+            })}
+            {renderModalInput({
+              icon: 'lock-closed-outline',
+              value: form.confirmPassword,
+              onChangeText: (value) => setField('confirmPassword', value),
+              placeholder: 'Confirm password',
+              secureTextEntry: true,
+              showToggle: true,
+              isVisible: showConfirmPassword,
+              onToggle: () => setShowConfirmPassword((current) => !current),
+            })}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             <TouchableOpacity style={styles.saveButton} onPress={submitAdmin} disabled={saving}>
@@ -433,7 +507,11 @@ const createStyles = (theme) => StyleSheet.create({
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   modalTitle: { color: theme.textPrimary, fontFamily: 'Inter', fontSize: 18, fontWeight: '800' },
   closeButton: { width: 34, height: 34, borderRadius: 10, borderWidth: 1, borderColor: theme.borderLight, alignItems: 'center', justifyContent: 'center' },
-  input: { height: 46, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, paddingHorizontal: 14, color: theme.textPrimary, fontFamily: 'Inter', fontSize: 13, marginBottom: 10 },
+  inputWrap: { height: 50, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  inputIcon: { marginLeft: 14, marginRight: 10 },
+  modalInput: { flex: 1, height: '100%', color: theme.textPrimary, fontFamily: 'Inter', fontSize: 13, paddingRight: 14 },
+  modalInputWithAction: { paddingRight: 4 },
+  eyeButton: { width: 44, height: '100%', alignItems: 'center', justifyContent: 'center' },
   roleSelector: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   roleOption: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderLight, borderRadius: 10 },
   roleOptionActive: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.primaryMid, backgroundColor: theme.primaryLight, borderRadius: 10 },
