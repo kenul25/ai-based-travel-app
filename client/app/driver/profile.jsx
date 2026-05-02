@@ -181,7 +181,7 @@ export default function DriverProfileScreen() {
   const confirmDeleteAccount = () => {
     Alert.alert(
       'Delete account?',
-      'This will deactivate your driver account and sign you out. Existing bookings and payment records stay preserved for trip history.',
+      'This will permanently delete your driver account and sign you out. Existing trip, booking, and payment records may remain for history.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -315,7 +315,7 @@ export default function DriverProfileScreen() {
           {renderSettingRow({
             icon: 'trash-outline',
             label: 'Delete account',
-            value: deletingAccount ? 'Deleting...' : 'Deactivate',
+            value: deletingAccount ? 'Deleting...' : 'Permanent',
             danger: true,
             disabled: deletingAccount,
             onPress: confirmDeleteAccount,

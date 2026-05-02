@@ -151,7 +151,7 @@ export default function AdminProfileScreen() {
   const confirmDeleteAccount = () => {
     Alert.alert(
       'Delete admin account?',
-      'This will deactivate your admin account and sign you out. The last active super admin account cannot be deleted.',
+      'This will permanently delete your admin account and sign you out. The last active super admin account cannot be deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -300,7 +300,7 @@ export default function AdminProfileScreen() {
           {renderSettingRow({
             icon: 'trash-outline',
             label: 'Delete account',
-            value: deletingAccount ? 'Deleting...' : 'Deactivate',
+            value: deletingAccount ? 'Deleting...' : 'Permanent',
             danger: true,
             disabled: deletingAccount,
             onPress: confirmDeleteAccount,

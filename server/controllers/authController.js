@@ -147,10 +147,9 @@ exports.deleteMe = async (req, res) => {
       }
     }
 
-    user.isActive = false;
-    await user.save();
+    await user.deleteOne();
 
-    res.status(200).json({ success: true, message: 'Your account has been deleted' });
+    res.status(200).json({ success: true, message: 'Your account has been permanently deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

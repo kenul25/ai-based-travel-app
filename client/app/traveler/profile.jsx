@@ -179,7 +179,7 @@ export default function TravelerProfileScreen() {
   const confirmDeleteAccount = () => {
     Alert.alert(
       'Delete account?',
-      'This will deactivate your account and sign you out. You will need support or an admin to restore access.',
+      'This will permanently delete your account and sign you out. This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -312,7 +312,7 @@ export default function TravelerProfileScreen() {
           {renderSettingRow({
             icon: 'trash-outline',
             label: 'Delete account',
-            value: deletingAccount ? 'Deleting...' : 'Deactivate',
+            value: deletingAccount ? 'Deleting...' : 'Permanent',
             danger: true,
             disabled: deletingAccount,
             onPress: confirmDeleteAccount,
