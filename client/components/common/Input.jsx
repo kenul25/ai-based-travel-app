@@ -53,12 +53,18 @@ export default function Input({ label, icon, isPassword, error, valid, ...props 
           </Animated.Text>
 
           <TextInput
+            {...props}
             style={[styles.input, { color: theme.textPrimary }]}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+            onFocus={(event) => {
+              setIsFocused(true);
+              props.onFocus?.(event);
+            }}
+            onBlur={(event) => {
+              setIsFocused(false);
+              props.onBlur?.(event);
+            }}
             secureTextEntry={isPassword && !showPassword}
             placeholderTextColor="transparent"
-            {...props}
           />
         </View>
 

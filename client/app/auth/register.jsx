@@ -5,6 +5,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import Input from '../../components/common/Input';
+import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
+import {
+  normalizePhoneNumber,
+  validateEmail,
+  validatePassword,
+  validatePasswordMatch,
+  validatePhoneNumber,
+  validateRequiredName,
+} from '../../utils/validation';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -14,17 +23,33 @@ export default function RegisterScreen() {
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', password: '', confirmPassword: '', licenseNumber: ''
   });
+  const [touched, setTouched] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const nextValue = field === 'phone' ? normalizePhoneNumber(value) : value;
+    setFormData(prev => ({ ...prev, [field]: nextValue }));
   };
 
+  const markTouched = (field) => setTouched((current) => ({ ...current, [field]: true }));
+
+  const fieldErrors = {
+    name: validateRequiredName(formData.name, 'Full name'),
+    email: validateEmail(formData.email),
+    phone: validatePhoneNumber(formData.phone),
+    password: validatePassword(formData.password),
+    confirmPassword: validatePasswordMatch(formData.password, formData.confirmPassword),
+  };
+
+  const getFieldError = (field) => (touched[field] ? fieldErrors[field] : '');
+  const isFormValid = Object.values(fieldErrors).every((message) => !message);
+
   const handleRegister = async () => {
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    setTouched({ name: true, email: true, phone: true, password: true, confirmPassword: true });
+    if (!isFormValid) {
+      setError('Please fix the highlighted fields.');
       return;
     }
     setError(null);
@@ -90,16 +115,26 @@ export default function RegisterScreen() {
           <Input 
             icon="person-outline" label="Full name" 
             value={formData.name} onChangeText={(v) => handleChange('name', v)} 
+            onBlur={() => markTouched('name')}
+            error={getFieldError('name')}
+            valid={touched.name && !fieldErrors.name}
           />
           <Input 
             icon="mail-outline" label="Email Address" 
             value={formData.email} onChangeText={(v) => handleChange('email', v)} 
             keyboardType="email-address" autoCapitalize="none"
+            onBlur={() => markTouched('email')}
+            error={getFieldError('email')}
+            valid={touched.email && !fieldErrors.email}
           />
           <Input 
             icon="call-outline" label="Phone number" 
             value={formData.phone} onChangeText={(v) => handleChange('phone', v)} 
-            keyboardType="phone-pad"
+            keyboardType="number-pad"
+            maxLength={10}
+            onBlur={() => markTouched('phone')}
+            error={getFieldError('phone')}
+            valid={touched.phone && !fieldErrors.phone}
           />
 
           {role === 'driver' && (
@@ -113,11 +148,16 @@ export default function RegisterScreen() {
             icon="lock-closed-outline" label="Password" 
             value={formData.password} onChangeText={(v) => handleChange('password', v)} 
             isPassword
+            onBlur={() => markTouched('password')}
+            error={getFieldError('password')}
           />
+          <PasswordStrengthMeter password={formData.password} />
           <Input 
             icon="lock-closed-outline" label="Confirm password" 
             value={formData.confirmPassword} onChangeText={(v) => handleChange('confirmPassword', v)} 
             isPassword
+            onBlur={() => markTouched('confirmPassword')}
+            error={getFieldError('confirmPassword')}
           />
 
           {error && <Text style={{ color: theme.error, marginTop: 8, fontSize: 13, textAlign: 'center' }}>{error}</Text>}
@@ -125,7 +165,7 @@ export default function RegisterScreen() {
           <TouchableOpacity 
             style={[styles.primaryButton, { backgroundColor: theme.primary, marginTop: 16 }]}
             onPress={handleRegister}
-            disabled={loading}
+            disabled={loading || !isFormValid}
           >
             <Text style={styles.buttonText}>{loading ? 'Creating...' : 'Create account'}</Text>
           </TouchableOpacity>

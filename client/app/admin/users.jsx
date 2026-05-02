@@ -16,6 +16,15 @@ import AdminTabBar from '../../components/admin/AdminTabBar';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
+import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
+import {
+  normalizePhoneNumber,
+  validateEmail,
+  validatePassword,
+  validatePasswordMatch,
+  validatePhoneNumber,
+  validateRequiredName,
+} from '../../utils/validation';
 
 const fallbackUsers = [
   { _id: 'u1', name: 'Kasun Perera', email: 'kasun@example.com', role: 'traveler', isActive: true, createdAt: '2026-04-18' },
@@ -52,6 +61,7 @@ export default function AdminUsersScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -91,10 +101,26 @@ export default function AdminUsersScreen() {
     });
   }, [admins, users, selectedRole, statusFilter, search]);
 
-  const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const setField = (key, value) => {
+    const nextValue = key === 'phone' ? normalizePhoneNumber(value) : value;
+    setForm((current) => ({ ...current, [key]: nextValue }));
+    setTouched((current) => ({ ...current, [key]: true }));
+  };
+
+  const passwordRequired = !form._id || !!form.password || !!form.confirmPassword;
+  const modalErrors = {
+    name: validateRequiredName(form.name, 'Full name'),
+    email: validateEmail(form.email),
+    phone: validatePhoneNumber(form.phone),
+    password: passwordRequired ? validatePassword(form.password) : '',
+    confirmPassword: passwordRequired ? validatePasswordMatch(form.password, form.confirmPassword) : '',
+  };
+
+  const getModalError = (field) => (touched[field] ? modalErrors[field] : '');
 
   const openCreateAdmin = () => {
     setForm(initialForm);
+    setTouched({});
     setError('');
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -111,6 +137,7 @@ export default function AdminUsersScreen() {
       confirmPassword: '',
       role: admin.role || 'admin',
     });
+    setTouched({});
     setError('');
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -119,16 +146,10 @@ export default function AdminUsersScreen() {
 
   const submitAdmin = async () => {
     setError('');
-    if (!form.name.trim() || !form.email.trim()) {
-      setError('Name and email are required.');
-      return;
-    }
-    if (!form._id && !form.password) {
-      setError('Password is required for a new admin.');
-      return;
-    }
-    if (form.password && form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
+    setTouched({ name: true, email: true, phone: true, password: true, confirmPassword: true });
+    const firstError = Object.values(modalErrors).find(Boolean);
+    if (firstError) {
+      setError(firstError);
       return;
     }
     if (form.role === 'superadmin' && !isSuperAdmin) {
@@ -237,24 +258,32 @@ export default function AdminUsersScreen() {
     showToggle,
     isVisible,
     onToggle,
+    error,
+    valid,
   }) => (
-    <View style={styles.inputWrap}>
-      <Ionicons name={icon} size={18} color={theme.textMuted} style={styles.inputIcon} />
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={theme.textMuted}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        secureTextEntry={secureTextEntry && !isVisible}
-        style={[styles.modalInput, showToggle && styles.modalInputWithAction]}
-      />
-      {showToggle ? (
-        <TouchableOpacity style={styles.eyeButton} onPress={onToggle} accessibilityLabel={isVisible ? 'Hide password' : 'Show password'}>
-          <Ionicons name={isVisible ? 'eye-off-outline' : 'eye-outline'} size={19} color={theme.textMuted} />
-        </TouchableOpacity>
-      ) : null}
+    <View style={styles.inputGroup}>
+      <View style={[styles.inputWrap, error && styles.inputWrapError]}>
+        <Ionicons name={icon} size={18} color={error ? theme.error : theme.textMuted} style={styles.inputIcon} />
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={theme.textMuted}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          maxLength={keyboardType === 'number-pad' ? 10 : undefined}
+          secureTextEntry={secureTextEntry && !isVisible}
+          style={[styles.modalInput, showToggle && styles.modalInputWithAction]}
+        />
+        {showToggle ? (
+          <TouchableOpacity style={styles.eyeButton} onPress={onToggle} accessibilityLabel={isVisible ? 'Hide password' : 'Show password'}>
+            <Ionicons name={isVisible ? 'eye-off-outline' : 'eye-outline'} size={19} color={theme.textMuted} />
+          </TouchableOpacity>
+        ) : valid ? (
+          <Ionicons name="checkmark-circle" size={18} color={theme.success} style={styles.validIcon} />
+        ) : null}
+      </View>
+      {error ? <Text style={styles.inputErrorText}>{error}</Text> : null}
     </View>
   );
 
@@ -383,6 +412,8 @@ export default function AdminUsersScreen() {
               value: form.name,
               onChangeText: (value) => setField('name', value),
               placeholder: 'Full name',
+              error: getModalError('name'),
+              valid: touched.name && !modalErrors.name,
             })}
             {renderModalInput({
               icon: 'mail-outline',
@@ -391,13 +422,17 @@ export default function AdminUsersScreen() {
               placeholder: 'Email Address',
               autoCapitalize: 'none',
               keyboardType: 'email-address',
+              error: getModalError('email'),
+              valid: touched.email && !modalErrors.email,
             })}
             {renderModalInput({
               icon: 'call-outline',
               value: form.phone,
               onChangeText: (value) => setField('phone', value),
               placeholder: 'Phone number',
-              keyboardType: 'phone-pad',
+              keyboardType: 'number-pad',
+              error: getModalError('phone'),
+              valid: touched.phone && !modalErrors.phone,
             })}
 
             <View style={styles.roleSelector}>
@@ -428,7 +463,9 @@ export default function AdminUsersScreen() {
               showToggle: true,
               isVisible: showPassword,
               onToggle: () => setShowPassword((current) => !current),
+              error: getModalError('password'),
             })}
+            <PasswordStrengthMeter password={form.password} />
             {renderModalInput({
               icon: 'lock-closed-outline',
               value: form.confirmPassword,
@@ -438,6 +475,7 @@ export default function AdminUsersScreen() {
               showToggle: true,
               isVisible: showConfirmPassword,
               onToggle: () => setShowConfirmPassword((current) => !current),
+              error: getModalError('confirmPassword'),
             })}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -507,11 +545,15 @@ const createStyles = (theme) => StyleSheet.create({
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   modalTitle: { color: theme.textPrimary, fontFamily: 'Inter', fontSize: 18, fontWeight: '800' },
   closeButton: { width: 34, height: 34, borderRadius: 10, borderWidth: 1, borderColor: theme.borderLight, alignItems: 'center', justifyContent: 'center' },
-  inputWrap: { height: 50, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  inputGroup: { marginBottom: 10 },
+  inputWrap: { height: 50, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, flexDirection: 'row', alignItems: 'center' },
+  inputWrapError: { borderColor: theme.error },
   inputIcon: { marginLeft: 14, marginRight: 10 },
   modalInput: { flex: 1, height: '100%', color: theme.textPrimary, fontFamily: 'Inter', fontSize: 13, paddingRight: 14 },
   modalInputWithAction: { paddingRight: 4 },
   eyeButton: { width: 44, height: '100%', alignItems: 'center', justifyContent: 'center' },
+  validIcon: { marginRight: 12 },
+  inputErrorText: { color: theme.error, fontFamily: 'Inter', fontSize: 11, marginTop: 5, marginLeft: 4 },
   roleSelector: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   roleOption: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderLight, borderRadius: 10 },
   roleOptionActive: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.primaryMid, backgroundColor: theme.primaryLight, borderRadius: 10 },

@@ -6,6 +6,15 @@ import AdminTabBar from '../../components/admin/AdminTabBar';
 import { useAuth } from '../../context/AuthContext';
 import { themeOptions, useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
+import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
+import {
+  normalizePhoneNumber,
+  validateEmail,
+  validatePassword,
+  validatePasswordMatch,
+  validatePhoneNumber,
+  validateRequiredName,
+} from '../../utils/validation';
 
 const getInitials = (name) => {
   if (!name) return 'AD';
@@ -57,8 +66,20 @@ export default function AdminProfileScreen() {
   ];
 
   const saveLocalField = () => {
+    const fieldError = validateProfileField(editingField);
+    if (fieldError) {
+      Alert.alert('Invalid field', fieldError);
+      return;
+    }
     setEditingField('');
     Alert.alert('Saved locally', 'Connect this to the admin profile update endpoint when backend profile editing is enabled.');
+  };
+
+  const validateProfileField = (key) => {
+    if (key === 'name') return validateRequiredName(draftValues.name, 'Name');
+    if (key === 'email') return validateEmail(draftValues.email);
+    if (key === 'phone') return validatePhoneNumber(draftValues.phone);
+    return '';
   };
 
   const renderFieldRow = (field) => {
@@ -71,12 +92,20 @@ export default function AdminProfileScreen() {
         <View style={styles.infoBody}>
           <Text style={styles.rowLabel}>{field.label}</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.inlineInput}
-              value={draftValues[field.key]}
-              onChangeText={(value) => setDraftValues((current) => ({ ...current, [field.key]: value }))}
-              autoFocus
-            />
+            <>
+              <TextInput
+                style={styles.inlineInput}
+                value={draftValues[field.key]}
+                keyboardType={field.key === 'phone' ? 'number-pad' : 'default'}
+                maxLength={field.key === 'phone' ? 10 : undefined}
+                onChangeText={(value) => setDraftValues((current) => ({
+                  ...current,
+                  [field.key]: field.key === 'phone' ? normalizePhoneNumber(value) : value,
+                }))}
+                autoFocus
+              />
+              {validateProfileField(field.key) ? <Text style={styles.validationText}>{validateProfileField(field.key)}</Text> : null}
+            </>
           ) : (
             <View style={styles.valueLine}>
               <Text style={styles.rowValue}>{draftValues[field.key] || field.value}</Text>
@@ -123,12 +152,14 @@ export default function AdminProfileScreen() {
       Alert.alert('Missing details', 'Please fill all password fields.');
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      Alert.alert('Weak password', 'New password must be at least 6 characters.');
+    const passwordError = validatePassword(passwordForm.newPassword);
+    if (passwordError) {
+      Alert.alert('Weak password', passwordError);
       return;
     }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      Alert.alert('Password mismatch', 'New password and confirmation do not match.');
+    const matchError = validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword);
+    if (matchError) {
+      Alert.alert('Password mismatch', matchError);
       return;
     }
 
@@ -185,6 +216,7 @@ export default function AdminProfileScreen() {
           value={passwordForm.currentPassword}
           onChangeText={(value) => setPasswordForm((current) => ({ ...current, currentPassword: value }))}
         />
+        <PasswordStrengthMeter password={passwordForm.newPassword} />
         <TextInput
           style={styles.passwordInput}
           placeholder="New password"
@@ -193,6 +225,9 @@ export default function AdminProfileScreen() {
           value={passwordForm.newPassword}
           onChangeText={(value) => setPasswordForm((current) => ({ ...current, newPassword: value }))}
         />
+        {passwordForm.confirmPassword && validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword) ? (
+          <Text style={styles.validationText}>{validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword)}</Text>
+        ) : null}
         <TextInput
           style={styles.passwordInput}
           placeholder="Confirm new password"
@@ -351,6 +386,7 @@ const createStyles = (theme) => StyleSheet.create({
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.successLight, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, marginLeft: 8 },
   verifiedText: { color: theme.success, fontSize: 10, fontFamily: 'Inter', fontWeight: '800', marginLeft: 3 },
   inlineInput: { color: theme.textPrimary, fontSize: 13, fontFamily: 'Inter', borderBottomWidth: 1, borderBottomColor: theme.primary, paddingVertical: 2 },
+  validationText: { color: theme.error, fontSize: 11, fontFamily: 'Inter', marginTop: 5 },
   iconButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   settingRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: theme.borderLight },
   settingLabel: { flex: 1, color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter' },

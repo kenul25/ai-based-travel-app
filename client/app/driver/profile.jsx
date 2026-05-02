@@ -5,6 +5,15 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { themeOptions, useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
+import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
+import {
+  normalizePhoneNumber,
+  validateEmail,
+  validatePassword,
+  validatePasswordMatch,
+  validatePhoneNumber,
+  validateRequiredName,
+} from '../../utils/validation';
 
 const tabs = [
   { label: 'Home', icon: 'home-outline', route: '/driver/home' },
@@ -62,6 +71,13 @@ export default function DriverProfileScreen() {
     { key: 'licenseNumber', label: 'License number', value: user?.licenseNumber || 'Pending profile update', icon: 'id-card-outline' },
   ];
 
+  const validateProfileField = (key) => {
+    if (key === 'name') return validateRequiredName(draftValues.name, 'Name');
+    if (key === 'email') return validateEmail(draftValues.email);
+    if (key === 'phone') return validatePhoneNumber(draftValues.phone);
+    return '';
+  };
+
   const renderTab = (tab) => {
     const isActive = tab.label === 'Profile';
     return (
@@ -89,12 +105,20 @@ export default function DriverProfileScreen() {
         <View style={styles.infoBody}>
           <Text style={styles.rowLabel}>{field.label}</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.inlineInput}
-              value={draftValues[field.key]}
-              onChangeText={(value) => setDraftValues((current) => ({ ...current, [field.key]: value }))}
-              autoFocus
-            />
+            <>
+              <TextInput
+                style={styles.inlineInput}
+                value={draftValues[field.key]}
+                keyboardType={field.key === 'phone' ? 'number-pad' : 'default'}
+                maxLength={field.key === 'phone' ? 10 : undefined}
+                onChangeText={(value) => setDraftValues((current) => ({
+                  ...current,
+                  [field.key]: field.key === 'phone' ? normalizePhoneNumber(value) : value,
+                }))}
+                autoFocus
+              />
+              {validateProfileField(field.key) ? <Text style={styles.validationText}>{validateProfileField(field.key)}</Text> : null}
+            </>
           ) : (
             <View style={styles.valueLine}>
               <Text style={styles.rowValue}>{draftValues[field.key] || field.value}</Text>
@@ -111,6 +135,11 @@ export default function DriverProfileScreen() {
           style={styles.iconButton}
           onPress={() => {
             if (isEditing) {
+              const fieldError = validateProfileField(field.key);
+              if (fieldError) {
+                Alert.alert('Invalid field', fieldError);
+                return;
+              }
               setEditingField('');
               Alert.alert('Saved locally', 'Profile API update can be connected when the backend endpoint is ready.');
             } else {
@@ -152,13 +181,15 @@ export default function DriverProfileScreen() {
       return;
     }
 
-    if (passwordForm.newPassword.length < 6) {
-      Alert.alert('Weak password', 'New password must be at least 6 characters.');
+    const passwordError = validatePassword(passwordForm.newPassword);
+    if (passwordError) {
+      Alert.alert('Weak password', passwordError);
       return;
     }
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      Alert.alert('Password mismatch', 'New password and confirmation do not match.');
+    const matchError = validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword);
+    if (matchError) {
+      Alert.alert('Password mismatch', matchError);
       return;
     }
 
@@ -216,6 +247,7 @@ export default function DriverProfileScreen() {
           value={passwordForm.currentPassword}
           onChangeText={(value) => setPasswordForm((current) => ({ ...current, currentPassword: value }))}
         />
+        <PasswordStrengthMeter password={passwordForm.newPassword} />
         <TextInput
           style={styles.passwordInput}
           placeholder="New password"
@@ -224,6 +256,9 @@ export default function DriverProfileScreen() {
           value={passwordForm.newPassword}
           onChangeText={(value) => setPasswordForm((current) => ({ ...current, newPassword: value }))}
         />
+        {passwordForm.confirmPassword && validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword) ? (
+          <Text style={styles.validationText}>{validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword)}</Text>
+        ) : null}
         <TextInput
           style={styles.passwordInput}
           placeholder="Confirm new password"
@@ -360,6 +395,7 @@ const createStyles = (theme) => StyleSheet.create({
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.successLight, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, marginLeft: 8 },
   verifiedText: { color: theme.success, fontSize: 10, fontFamily: 'Inter', fontWeight: '700', marginLeft: 3 },
   inlineInput: { color: theme.textPrimary, fontSize: 13, fontFamily: 'Inter', borderBottomWidth: 1, borderBottomColor: theme.primary, paddingVertical: 2 },
+  validationText: { color: theme.error, fontSize: 11, fontFamily: 'Inter', marginTop: 5 },
   iconButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   themeCard: { gap: 8, marginBottom: 16 },
   themeOption: { minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 },
