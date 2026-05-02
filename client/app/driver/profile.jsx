@@ -29,6 +29,11 @@ const getInitials = (name) => {
   return parts[0].slice(0, 2).toUpperCase();
 };
 
+const formatDriverRating = (value) => {
+  const rating = Number(value || 0);
+  return rating > 0 ? rating.toFixed(1) : 'New';
+};
+
 export default function DriverProfileScreen() {
   const router = useRouter();
   const { user, logout, deleteAccount } = useAuth();
@@ -298,16 +303,16 @@ export default function DriverProfileScreen() {
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>156</Text>
-            <Text style={styles.statLabel}>Trips</Text>
+            <Text style={styles.statValue}>{user?.isVerified ? 'Verified' : 'Pending'}</Text>
+            <Text style={styles.statLabel}>Verification</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValueMono}>LKR 1.2M</Text>
-            <Text style={styles.statLabel}>Earned</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{Number(user?.rating || 4.8).toFixed(1)}</Text>
+            <Text style={styles.statValue}>{formatDriverRating(user?.rating)}</Text>
             <Text style={styles.statLabel}>Rating</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{Number(user?.totalRatings || 0)}</Text>
+            <Text style={styles.statLabel}>Reviews</Text>
           </View>
         </View>
 
@@ -380,7 +385,7 @@ const createStyles = (theme) => StyleSheet.create({
   roleBadgeText: { color: theme.primaryDark, fontSize: 11, fontFamily: 'Inter', fontWeight: '700', marginLeft: 5 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statCard: { flex: 1, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, padding: 12, alignItems: 'center' },
-  statValue: { color: theme.textPrimary, fontSize: 20, fontFamily: 'Inter', fontWeight: '700' },
+  statValue: { color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: '700', minHeight: 24, textAlign: 'center', textAlignVertical: 'center' },
   statValueMono: { color: theme.textPrimary, fontSize: 13, fontFamily: 'monospace', fontWeight: '700', minHeight: 24, textAlignVertical: 'center' },
   statLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', marginTop: 3 },
   sectionLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'uppercase', marginBottom: 8, marginTop: 4 },

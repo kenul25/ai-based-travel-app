@@ -30,6 +30,13 @@ const getInitials = (name) => {
   return parts[0].slice(0, 2).toUpperCase();
 };
 
+const formatMemberSince = (value) => {
+  if (!value) return 'New';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'New';
+  return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+};
+
 export default function TravelerProfileScreen() {
   const router = useRouter();
   const { user, logout, deleteAccount } = useAuth();
@@ -296,16 +303,16 @@ export default function TravelerProfileScreen() {
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
-            <Text style={styles.statLabel}>Trips</Text>
+            <Text style={styles.statValue}>{user?.role === 'traveler' ? 'Traveler' : user?.role || 'User'}</Text>
+            <Text style={styles.statLabel}>Role</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>8</Text>
-            <Text style={styles.statLabel}>Destinations</Text>
+            <Text style={styles.statValue}>{user?.isActive === false ? 'Inactive' : 'Active'}</Text>
+            <Text style={styles.statLabel}>Status</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>4</Text>
-            <Text style={styles.statLabel}>Reviews</Text>
+            <Text style={styles.statValue}>{formatMemberSince(user?.createdAt)}</Text>
+            <Text style={styles.statLabel}>Member since</Text>
           </View>
         </View>
 
@@ -377,7 +384,7 @@ const createStyles = (theme) => StyleSheet.create({
   roleBadgeText: { color: theme.primaryDark, fontSize: 11, fontFamily: 'Inter', fontWeight: '700', marginLeft: 5 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statCard: { flex: 1, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, padding: 12, alignItems: 'center' },
-  statValue: { color: theme.textPrimary, fontSize: 20, fontFamily: 'Inter', fontWeight: '700' },
+  statValue: { color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: '700', minHeight: 24, textAlign: 'center', textAlignVertical: 'center' },
   statLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', marginTop: 3 },
   sectionLabel: { color: theme.textMuted, fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'uppercase', marginBottom: 8, marginTop: 4 },
   card: { borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
