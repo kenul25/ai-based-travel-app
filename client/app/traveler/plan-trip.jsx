@@ -31,7 +31,7 @@ const formatDisplayDate = (value) => {
 
 export default function PlanTripScreen() {
   const router = useRouter();
-  const { tripId } = useLocalSearchParams();
+  const { tripId, destination } = useLocalSearchParams();
   const isEditing = !!tripId;
 
   const [step, setStep] = useState(1);
@@ -58,7 +58,10 @@ export default function PlanTripScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!tripId) return undefined;
+      if (!tripId) {
+        if (destination) setDestinationArea(String(destination));
+        return undefined;
+      }
 
       let isActive = true;
 
@@ -93,7 +96,7 @@ export default function PlanTripScreen() {
       return () => {
         isActive = false;
       };
-    }, [router, tripId])
+    }, [destination, router, tripId])
   );
 
   const togglePreference = (preference) => {

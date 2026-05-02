@@ -297,7 +297,7 @@ export default function AdminProfileScreen() {
         <Text style={styles.sectionLabel}>Admin tools</Text>
         <View style={styles.card}>
           {renderSettingRow({ icon: 'people-outline', label: 'Manage users', value: 'Travelers, drivers, admins', onPress: () => router.push('/admin/users') })}
-          {renderSettingRow({ icon: 'map-outline', label: 'AI trip audit', value: 'Plans', onPress: () => router.push('/admin/trips') })}
+          {renderSettingRow({ icon: 'location-outline', label: 'Destinations', value: 'Catalog', onPress: () => router.push('/admin/destinations') })}
           {renderSettingRow({ icon: 'card-outline', label: 'Payment oversight', value: 'Refunds', onPress: () => router.push('/admin/payments') })}
           {renderSettingRow({ icon: 'star-outline', label: 'Review moderation', value: 'Queue', onPress: () => router.push('/admin/reviews') })}
         </View>

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,7 @@ export default function TravelerDashboard() {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [upcomingTrip, setUpcomingTrip] = useState(null);
+  const [featuredDestinations, setFeaturedDestinations] = useState([]);
   const [loadingTrip, setLoadingTrip] = useState(true);
 
   useFocusEffect(
@@ -28,12 +29,17 @@ export default function TravelerDashboard() {
       const fetchUpcomingTrip = async () => {
         try {
           setLoadingTrip(true);
-          const res = await api.get('/trips/my');
-          const trips = res.data.trips || [];
+          const [tripRes, destinationRes] = await Promise.all([
+            api.get('/trips/my'),
+            api.get('/destinations', { params: { featured: true, limit: 4 } }),
+          ]);
+          const trips = tripRes.data.trips || [];
+          setFeaturedDestinations(destinationRes.data?.destinations || []);
           const upcoming = trips.find((trip) => ['draft', 'planning', 'confirmed'].includes(trip.status)) || trips[0] || null;
           setUpcomingTrip(upcoming);
         } catch (_error) {
           setUpcomingTrip(null);
+          setFeaturedDestinations([]);
         } finally {
           setLoadingTrip(false);
         }
@@ -223,6 +229,45 @@ export default function TravelerDashboard() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.featuredSection}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Featured Destinations</Text>
+            <TouchableOpacity style={styles.exploreLink} onPress={() => router.push('/traveler/destinations')}>
+              <Text style={styles.exploreLinkText}>Explore</Text>
+              <Ionicons name="arrow-forward" size={14} color={theme.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {featuredDestinations.length ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredList}>
+              {featuredDestinations.map((destination) => (
+                <TouchableOpacity key={destination._id} style={styles.destinationCard} onPress={() => router.push(`/traveler/destination/${destination._id}`)} activeOpacity={0.85}>
+                  {destination.image ? (
+                    <Image source={{ uri: destination.image }} style={styles.destinationImage} />
+                  ) : (
+                    <View style={styles.destinationImageFallback}>
+                      <Ionicons name="image-outline" size={28} color={theme.textMuted} />
+                    </View>
+                  )}
+                  <View style={styles.destinationBody}>
+                    <Text style={styles.destinationTitle} numberOfLines={1}>{destination.name}</Text>
+                    <Text style={styles.destinationLocation} numberOfLines={1}>{destination.location || 'Sri Lanka'}</Text>
+                    <View style={styles.destinationFooter}>
+                      <Text style={styles.destinationCategory} numberOfLines={1}>{destination.categories?.[0] || 'Travel'}</Text>
+                      <Ionicons name="chevron-forward" size={15} color={theme.primary} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <TouchableOpacity style={styles.destinationEmpty} onPress={() => router.push('/traveler/destinations')}>
+              <Ionicons name="location-outline" size={22} color={theme.primary} />
+              <Text style={styles.destinationEmptyText}>Explore all available destinations</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/traveler/plan-trip')}>
             <Ionicons name="sparkles-outline" size={22} color={theme.primary} />
@@ -302,6 +347,21 @@ const createStyles = (theme) => StyleSheet.create({
   aiSub: { color: theme.textSecondary, fontSize: 12, fontFamily: 'Inter', marginTop: 3, lineHeight: 17 },
   generateBtn: { backgroundColor: theme.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
   generateText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+  featuredSection: { marginHorizontal: 16, marginBottom: 16 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  exploreLink: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 10 },
+  exploreLinkText: { color: theme.primary, fontSize: 12, fontFamily: 'Inter', fontWeight: '800' },
+  featuredList: { gap: 10, paddingRight: 16 },
+  destinationCard: { width: 190, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 12, overflow: 'hidden' },
+  destinationImage: { width: '100%', height: 108, backgroundColor: theme.bgMuted },
+  destinationImageFallback: { width: '100%', height: 108, backgroundColor: theme.bgMuted, alignItems: 'center', justifyContent: 'center' },
+  destinationBody: { padding: 10 },
+  destinationTitle: { color: theme.textPrimary, fontFamily: 'Inter', fontSize: 14, fontWeight: '800' },
+  destinationLocation: { color: theme.textMuted, fontFamily: 'Inter', fontSize: 11, marginTop: 3 },
+  destinationFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  destinationCategory: { color: theme.primaryDark, backgroundColor: theme.primaryLight, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 3, fontFamily: 'Inter', fontSize: 10, fontWeight: '800', maxWidth: 130 },
+  destinationEmpty: { minHeight: 70, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  destinationEmptyText: { color: theme.textSecond, fontFamily: 'Inter', fontSize: 13, fontWeight: '700' },
   quickActions: { flexDirection: 'row', gap: 10, marginHorizontal: 16 },
   actionCard: { flex: 1, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, padding: 14 },
   actionTitle: { color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: '600', marginTop: 8 },

@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 const tabs = [
   { label: 'Overview', icon: 'home-outline', activeIcon: 'home', route: '/admin/home' },
   { label: 'Users', icon: 'people-outline', activeIcon: 'people', route: '/admin/users' },
-  { label: 'Trips', icon: 'map-outline', activeIcon: 'map', route: '/admin/trips' },
+  { label: 'Destinations', icon: 'location-outline', activeIcon: 'location', route: '/admin/destinations' },
   { label: 'Payments', icon: 'card-outline', activeIcon: 'card', route: '/admin/payments' },
   { label: 'Reviews', icon: 'star-outline', activeIcon: 'star', route: '/admin/reviews' },
 ];

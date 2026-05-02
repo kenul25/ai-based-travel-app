@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Trip = require('../models/Trip');
 const Payment = require('../models/Payment');
+const { Destination } = require('../models/Destination');
 
 const ADMIN_ROLES = ['admin', 'superadmin'];
 const MANAGED_USER_ROLES = ['traveler', 'driver'];
@@ -18,7 +19,7 @@ const canManageAdmin = (actor, target) => {
 
 exports.getStats = async (_req, res) => {
   try {
-    const [totalUsers, activeDrivers, totalTrips, pendingDrivers, revenueAgg, aiPlans] = await Promise.all([
+    const [totalUsers, activeDrivers, totalTrips, pendingDrivers, revenueAgg, aiPlans, totalDestinations, featuredDestinations] = await Promise.all([
       User.countDocuments({ role: { $in: ['traveler', 'driver'] } }),
       User.countDocuments({ role: 'driver', isActive: true, isVerified: true }),
       Trip.countDocuments(),
@@ -28,6 +29,8 @@ exports.getStats = async (_req, res) => {
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       Trip.countDocuments({ aiRecommendedPlaces: { $exists: true, $not: { $size: 0 } } }),
+      Destination.countDocuments({ isActive: true }),
+      Destination.countDocuments({ isActive: true, isFeatured: true }),
     ]);
 
     res.status(200).json({
@@ -38,6 +41,8 @@ exports.getStats = async (_req, res) => {
         totalTrips,
         revenue: revenueAgg[0]?.total || 0,
         aiPlans,
+        totalDestinations,
+        featuredDestinations,
         pendingDrivers,
       },
     });

@@ -14,6 +14,9 @@ server/uploads/vehicles/*
 server/uploads/reviews/*
 !server/uploads/reviews/.gitkeep
 
+server/uploads/destinations/*
+!server/uploads/destinations/.gitkeep
+
 Travel_System_Workflow_v2.md
 UI_Design_Prompt_v2_LightTheme.md
 

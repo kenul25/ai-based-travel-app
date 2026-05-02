@@ -19,7 +19,8 @@ import api from '../../services/api';
 const emptyStats = {
   totalUsers: 0,
   activeDrivers: 0,
-  totalTrips: 0,
+  totalDestinations: 0,
+  featuredDestinations: 0,
   revenue: 0,
   aiPlans: 0,
   pendingDrivers: 0,
@@ -54,7 +55,7 @@ export default function AdminHomeScreen() {
   const [stats, setStats] = useState(emptyStats);
   const [users, setUsers] = useState([]);
   const [admins, setAdmins] = useState([]);
-  const [trips, setTrips] = useState([]);
+  const [destinations, setDestinations] = useState([]);
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -69,24 +70,24 @@ export default function AdminHomeScreen() {
         setIsLoading(true);
       }
 
-      const [statsRes, usersRes, adminsRes, tripsRes, paymentsRes] = await Promise.all([
+      const [statsRes, usersRes, adminsRes, destinationsRes, paymentsRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/users'),
         api.get('/admin/admins'),
-        api.get('/admin/trips'),
+        api.get('/destinations', { params: { includeInactive: true, limit: 5 } }),
         api.get('/payments/admin/all'),
       ]);
 
       setStats({ ...emptyStats, ...(statsRes.data?.stats || {}) });
       setUsers(usersRes.data?.users || []);
       setAdmins(adminsRes.data?.admins || []);
-      setTrips(tripsRes.data?.trips || []);
+      setDestinations(destinationsRes.data?.destinations || []);
       setPayments(paymentsRes.data?.payments || []);
     } catch (error) {
       setStats(emptyStats);
       setUsers([]);
       setAdmins([]);
-      setTrips([]);
+      setDestinations([]);
       setPayments([]);
       setErrorMessage(error.response?.data?.message || 'Unable to load live admin overview data.');
     } finally {
@@ -107,17 +108,17 @@ export default function AdminHomeScreen() {
       .slice(0, 3)
   ), [users]);
 
-  const recentTrips = useMemo(() => trips.slice(0, 3), [trips]);
+  const recentDestinations = useMemo(() => destinations.slice(0, 3), [destinations]);
   const recentAdmins = useMemo(() => admins.slice(0, 3), [admins]);
 
   const recentActivity = useMemo(() => {
-    const tripItems = trips.slice(0, 2).map((trip) => ({
-      id: `trip-${trip._id}`,
-      icon: 'sparkles-outline',
-      text: `${trip.user?.name || 'Traveler'} generated a plan for ${trip.destinationArea || 'a trip'}`,
-      time: formatDate(trip.createdAt),
-      tone: 'amber',
-      createdAt: trip.createdAt,
+    const destinationItems = destinations.slice(0, 2).map((destination) => ({
+      id: `destination-${destination._id}`,
+      icon: 'location-outline',
+      text: `${destination.name} was added to the destination catalog`,
+      time: formatDate(destination.createdAt),
+      tone: destination.isFeatured ? 'amber' : 'green',
+      createdAt: destination.createdAt,
     }));
 
     const paymentItems = payments.slice(0, 2).map((payment) => ({
@@ -138,10 +139,10 @@ export default function AdminHomeScreen() {
       createdAt: account.createdAt,
     }));
 
-    return [...tripItems, ...paymentItems, ...userItems]
+    return [...destinationItems, ...paymentItems, ...userItems]
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
       .slice(0, 4);
-  }, [payments, trips, users]);
+  }, [destinations, payments, users]);
 
   const kpis = [
     {
@@ -159,10 +160,10 @@ export default function AdminHomeScreen() {
       tone: 'green',
     },
     {
-      label: 'AI trips',
-      value: formatCompactNumber(stats.aiPlans || stats.totalTrips),
-      trend: `${stats.totalTrips || 0} total trips`,
-      icon: 'sparkles-outline',
+      label: 'Destinations',
+      value: formatCompactNumber(stats.totalDestinations),
+      trend: `${stats.featuredDestinations || 0} featured`,
+      icon: 'location-outline',
       tone: 'amber',
     },
     {
@@ -187,7 +188,7 @@ export default function AdminHomeScreen() {
 
   const quickActions = [
     { label: 'Users', icon: 'people-outline', route: '/admin/users', tone: 'blue' },
-    { label: 'Trips', icon: 'map-outline', route: '/admin/trips', tone: 'green' },
+    { label: 'Destinations', icon: 'location-outline', route: '/admin/destinations', tone: 'green' },
     { label: 'Payments', icon: 'card-outline', route: '/admin/payments', tone: 'amber' },
     { label: 'Reviews', icon: 'star-outline', route: '/admin/reviews', tone: 'slate' },
   ];
@@ -229,7 +230,7 @@ export default function AdminHomeScreen() {
         <View style={styles.heroPanel}>
           <View>
             <Text style={styles.heroTitle}>Platform control center</Text>
-            <Text style={styles.heroText}>Live users, AI trips, payments, and admin activity from the server.</Text>
+            <Text style={styles.heroText}>Live users, destinations, payments, and admin activity from the server.</Text>
           </View>
           <TouchableOpacity style={styles.refreshButton} onPress={() => loadOverview({ refreshing: true })}>
             <Ionicons name="refresh-outline" size={17} color="#FFFFFF" />
@@ -313,30 +314,28 @@ export default function AdminHomeScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent AI trips</Text>
-            <Text style={styles.sectionMeta}>{recentTrips.length} plans</Text>
+            <Text style={styles.sectionTitle}>Recent destinations</Text>
+            <Text style={styles.sectionMeta}>{recentDestinations.length} places</Text>
           </View>
           <View style={styles.listCard}>
-            {recentTrips.length ? recentTrips.map((trip, index) => (
-              <View key={trip._id} style={[styles.listRow, index === recentTrips.length - 1 && styles.lastRow]}>
+            {recentDestinations.length ? recentDestinations.map((destination, index) => (
+              <View key={destination._id} style={[styles.listRow, index === recentDestinations.length - 1 && styles.lastRow]}>
                 <View style={[styles.iconBox, { backgroundColor: theme.amberLight }]}>
-                  <Ionicons name="sparkles-outline" size={17} color={theme.amber} />
+                  <Ionicons name="location-outline" size={17} color={theme.amber} />
                 </View>
                 <View style={styles.rowContent}>
                   <View style={styles.inlineRow}>
-                    <Text style={styles.rowTitle}>{trip.destinationArea || 'AI Trip'}</Text>
-                    <View style={styles.aiBadge}>
-                      <Text style={styles.aiBadgeText}>AI</Text>
-                    </View>
+                    <Text style={styles.rowTitle}>{destination.name}</Text>
+                    {destination.isFeatured ? <View style={styles.aiBadge}><Text style={styles.aiBadgeText}>Featured</Text></View> : null}
                   </View>
-                  <Text style={styles.rowSub}>{trip.user?.name || 'Traveler'} - {formatDate(trip.createdAt)}</Text>
+                  <Text style={styles.rowSub}>{destination.location || 'No location'} - {formatDate(destination.createdAt)}</Text>
                 </View>
                 <View style={styles.rightMeta}>
-                  <Text style={styles.monoAmount}>{formatCurrency(trip.totalEstimatedCost || trip.budget)}</Text>
-                  <Text style={styles.rowSub}>{trip.status || 'draft'}</Text>
+                  <Text style={styles.monoAmount}>{destination.categories?.[0] || 'Travel'}</Text>
+                  <Text style={styles.rowSub}>{destination.isActive ? 'Active' : 'Hidden'}</Text>
                 </View>
               </View>
-            )) : renderEmpty('No trips yet', 'Generated AI trip plans will appear after travelers create them.')}
+            )) : renderEmpty('No destinations yet', 'Created destinations will appear in this catalog list.')}
           </View>
         </View>
 
@@ -383,7 +382,7 @@ export default function AdminHomeScreen() {
                   <Text style={styles.timeBadge}>{activity.time}</Text>
                 </View>
               );
-            }) : renderEmpty('No activity yet', 'User, trip, and payment activity will appear here.')}
+            }) : renderEmpty('No activity yet', 'User, destination, and payment activity will appear here.')}
           </View>
         </View>
       </ScrollView>

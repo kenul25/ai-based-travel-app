@@ -43,6 +43,8 @@ const createUpload = (folder, prefix) => multer({
 
 const vehicleUpload = createUpload('vehicles', 'vehicle');
 const reviewUpload = createUpload('reviews', 'review');
+const destinationUpload = createUpload('destinations', 'destination');
 
 module.exports = vehicleUpload;
 module.exports.reviewUpload = reviewUpload;
+module.exports.destinationUpload = destinationUpload;
