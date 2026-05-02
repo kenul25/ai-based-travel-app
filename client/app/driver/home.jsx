@@ -164,7 +164,7 @@ export default function DriverDashboard() {
           </View>
         ) : visibleBookings.length === 0 ? (
           <View style={styles.emptyRequests}>
-            <Ionicons name="car-outline" size={32} color="#CBD5E1" />
+            <Ionicons name="car-outline" size={32} color={theme.textMuted} />
             <Text style={styles.emptyText}>No {queueFilter} bookings right now.</Text>
           </View>
         ) : (
@@ -172,7 +172,7 @@ export default function DriverDashboard() {
             <View key={booking._id} style={styles.requestCard}>
               <View style={styles.travelerRow}>
                 <View style={styles.travelerAvatar}>
-                  <Ionicons name="person" size={14} color="#94A3B8" />
+                  <Ionicons name="person" size={14} color={theme.textMuted} />
                 </View>
                 <Text style={styles.travelerName}>{booking.traveler?.name || 'Traveler'}</Text>
                 <Text style={styles.tripRouteMuted}>{booking.trip?.destinationArea || 'Trip request'}</Text>
@@ -210,7 +210,7 @@ export default function DriverDashboard() {
 
               {booking.status === 'completed' && (
                 <View style={styles.completedPill}>
-                  <Ionicons name="checkmark-circle" size={15} color="#145C32" />
+                  <Ionicons name="checkmark-circle" size={15} color={theme.success} />
                   <Text style={styles.completedPillText}>Completed trip</Text>
                 </View>
               )}
@@ -292,14 +292,14 @@ const createStyles = (theme) => StyleSheet.create({
   detailValue: { fontSize: 13, color: theme.textPrimary, fontFamily: 'Inter', fontWeight: '500' },
   amountText: { fontSize: 15, fontFamily: 'monospace', color: theme.primary, fontWeight: '600', marginBottom: 14 },
   actionRow: { flexDirection: 'row', gap: 10 },
-  rejectBtn: { flex: 1, backgroundColor: 'transparent', borderWidth: 1, borderColor: '#DC2626', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  rejectText: { color: '#DC2626', fontSize: 13, fontFamily: 'Inter', fontWeight: '600' },
+  rejectBtn: { flex: 1, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.error, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  rejectText: { color: theme.error, fontSize: 13, fontFamily: 'Inter', fontWeight: '600' },
   acceptBtn: { flex: 1, backgroundColor: theme.primary, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   acceptText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter', fontWeight: '600' },
-  fullCompleteBtn: { backgroundColor: '#16A34A', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  fullCompleteBtn: { backgroundColor: theme.success, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   fullCompleteText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter', fontWeight: '700' },
   completedPill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', backgroundColor: theme.successLight, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  completedPillText: { color: '#145C32', fontSize: 12, fontFamily: 'Inter', fontWeight: '700', marginLeft: 5 },
+  completedPillText: { color: theme.success, fontSize: 12, fontFamily: 'Inter', fontWeight: '700', marginLeft: 5 },
   emptyRequests: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   emptyText: { color: theme.textMuted, fontFamily: 'Inter', marginTop: 10 },
   bottomTabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, backgroundColor: theme.bgPrimary, borderTopWidth: 1, borderTopColor: theme.borderLight, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
