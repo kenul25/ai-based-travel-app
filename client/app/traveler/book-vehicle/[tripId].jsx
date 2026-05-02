@@ -178,6 +178,12 @@ export default function BookVehicleScreen() {
                       <Ionicons name="person-outline" size={14} color="#64748B" />
                       <Text style={styles.metaPillText}>{vehicle.driver?.name || 'Verified driver'}</Text>
                     </View>
+                    <View style={styles.metaPill}>
+                      <Ionicons name="star" size={14} color="#F59E0B" />
+                      <Text style={styles.metaPillText}>
+                        {Number(vehicle.driver?.rating || 0).toFixed(1)} ({vehicle.driver?.totalRatings || 0})
+                      </Text>
+                    </View>
                   </View>
 
                   <View style={styles.priceRow}>

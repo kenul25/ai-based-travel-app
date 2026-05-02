@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
@@ -18,6 +19,13 @@ const formatDate = (value) => {
   return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+const API_ORIGIN = api.defaults.baseURL?.replace(/\/api$/, '') || '';
+const resolvePhotoUrl = (photo) => {
+  if (!photo) return '';
+  if (photo.startsWith('http')) return photo;
+  return `${API_ORIGIN}${photo}`;
+};
+
 export default function SubmitReviewScreen() {
   const router = useRouter();
   const { bookingId } = useLocalSearchParams();
@@ -28,18 +36,32 @@ export default function SubmitReviewScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [existingReview, setExistingReview] = useState(null);
+  const [savedPhotos, setSavedPhotos] = useState([]);
+  const [localPhotos, setLocalPhotos] = useState([]);
   const [error, setError] = useState('');
 
   const loadBooking = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await api.get('/bookings/my-bookings');
-      const found = (response.data?.bookings || []).find((item) => item._id === bookingId);
+      const [bookingResponse, reviewResponse] = await Promise.all([
+        api.get('/bookings/my-bookings'),
+        api.get('/reviews/my'),
+      ]);
+      const found = (bookingResponse.data?.bookings || []).find((item) => item._id === bookingId);
+      const review = (reviewResponse.data?.reviews || []).find((item) => (item.booking?._id || item.booking) === bookingId);
       if (!found) {
         setError('Booking not found.');
       }
       setBooking(found || null);
+      setExistingReview(review || null);
+      if (review) {
+        setRating(Number(review.rating || 0));
+        setComment(review.comment || '');
+        setSavedPhotos(review.photos || []);
+        setLocalPhotos([]);
+      }
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'Could not load booking details.');
     } finally {
@@ -53,6 +75,25 @@ export default function SubmitReviewScreen() {
     }, [loadBooking])
   );
 
+  const uploadLocalPhotos = async () => {
+    if (!localPhotos.length) return [];
+
+    const formData = new FormData();
+    localPhotos.forEach((photo, index) => {
+      const extension = photo.uri.split('.').pop() || 'jpg';
+      formData.append('photos', {
+        uri: photo.uri,
+        name: `review-photo-${Date.now()}-${index}.${extension}`,
+        type: photo.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`,
+      });
+    });
+
+    const response = await api.post('/reviews/upload-photos', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data?.photos || [];
+  };
+
   const submitReview = async () => {
     if (!rating) {
       Alert.alert('Choose a rating', 'Please select 1 to 5 stars before submitting.');
@@ -61,12 +102,23 @@ export default function SubmitReviewScreen() {
 
     try {
       setSubmitting(true);
-      await api.post('/reviews', {
-        bookingId,
+      const uploadedPhotos = await uploadLocalPhotos();
+      const payload = {
         rating,
         comment,
-      });
-      Alert.alert('Review submitted', 'Thank you for sharing your trip experience.', [
+        photos: [...savedPhotos, ...uploadedPhotos],
+      };
+
+      if (existingReview) {
+        await api.put(`/reviews/${existingReview._id}`, payload);
+      } else {
+        await api.post('/reviews', {
+          bookingId,
+          ...payload,
+        });
+      }
+
+      Alert.alert(existingReview ? 'Review updated' : 'Review submitted', 'Thank you for sharing your trip experience.', [
         { text: 'Done', onPress: () => router.replace('/traveler/bookings') },
       ]);
     } catch (requestError) {
@@ -74,6 +126,63 @@ export default function SubmitReviewScreen() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const pickPhotos = async () => {
+    const remaining = 3 - savedPhotos.length - localPhotos.length;
+    if (remaining <= 0) {
+      Alert.alert('Photo limit reached', 'You can add up to 3 review photos.');
+      return;
+    }
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Please allow photo access to attach review photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+    });
+
+    if (!result.canceled) {
+      setLocalPhotos((current) => [...current, ...result.assets.slice(0, remaining)]);
+    }
+  };
+
+  const removeSavedPhoto = (photo) => {
+    setSavedPhotos((current) => current.filter((item) => item !== photo));
+  };
+
+  const removeLocalPhoto = (uri) => {
+    setLocalPhotos((current) => current.filter((item) => item.uri !== uri));
+  };
+
+  const deleteReview = () => {
+    if (!existingReview) return;
+    Alert.alert('Delete review?', 'Your rating, comment, and photos will be removed from the driver profile.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setSubmitting(true);
+            await api.delete(`/reviews/${existingReview._id}`);
+            Alert.alert('Review deleted', 'Your review has been removed.', [
+              { text: 'Done', onPress: () => router.replace('/traveler/bookings') },
+            ]);
+          } catch (requestError) {
+            Alert.alert('Delete failed', requestError.response?.data?.message || 'Could not delete review.');
+          } finally {
+            setSubmitting(false);
+          }
+        },
+      },
+    ]);
   };
 
   const renderStars = () => (
@@ -96,7 +205,7 @@ export default function SubmitReviewScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color={theme.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.topTitle}>Write a review</Text>
+          <Text style={styles.topTitle}>{existingReview ? 'Edit review' : 'Write a review'}</Text>
           <View style={styles.backButtonGhost} />
         </View>
 
@@ -151,14 +260,36 @@ export default function SubmitReviewScreen() {
 
             <View style={styles.photoPanel}>
               <Text style={styles.sectionTitle}>Photos</Text>
-              <Text style={styles.sectionText}>Photo upload can be connected later; the review API already supports photo URLs.</Text>
+              <Text style={styles.sectionText}>Add up to 3 photos from your trip experience.</Text>
               <View style={styles.photoSlots}>
-                {[1, 2, 3].map((slot) => (
-                  <View key={slot} style={styles.photoSlot}>
-                    <Ionicons name="camera-outline" size={20} color={theme.textMuted} />
+                {savedPhotos.map((photo) => (
+                  <View key={photo} style={styles.photoPreviewWrap}>
+                    <Image source={{ uri: resolvePhotoUrl(photo) }} style={styles.photoPreview} />
+                    <TouchableOpacity style={styles.removePhotoButton} onPress={() => removeSavedPhoto(photo)}>
+                      <Ionicons name="close" size={13} color="#FFFFFF" />
+                    </TouchableOpacity>
                   </View>
                 ))}
+                {localPhotos.map((photo) => (
+                  <View key={photo.uri} style={styles.photoPreviewWrap}>
+                    <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+                    <TouchableOpacity style={styles.removePhotoButton} onPress={() => removeLocalPhoto(photo.uri)}>
+                      <Ionicons name="close" size={13} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {savedPhotos.length + localPhotos.length < 3 ? (
+                  <TouchableOpacity style={styles.photoSlot} onPress={pickPhotos}>
+                    <Ionicons name="camera-outline" size={20} color={theme.textMuted} />
+                    <Text style={styles.photoSlotText}>Add</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
+            </View>
+
+            <View style={styles.visibilityCard}>
+              <Ionicons name="eye-outline" size={18} color={theme.primary} />
+              <Text style={styles.visibilityText}>Approved reviews are visible on the driver profile and help other travelers compare drivers before booking.</Text>
             </View>
           </>
         )}
@@ -166,8 +297,13 @@ export default function SubmitReviewScreen() {
 
       {!loading && !error ? (
         <View style={styles.footer}>
+          {existingReview ? (
+            <TouchableOpacity style={styles.deleteButton} disabled={submitting} onPress={deleteReview}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity style={[styles.submitButton, (!rating || submitting) && styles.disabledButton]} disabled={!rating || submitting} onPress={submitReview}>
-            {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>Submit review</Text>}
+            {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{existingReview ? 'Save review' : 'Submit review'}</Text>}
           </TouchableOpacity>
         </View>
       ) : null}
@@ -207,8 +343,16 @@ const createStyles = (theme) => StyleSheet.create({
   photoPanel: { borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgPrimary, borderRadius: 14, padding: 14 },
   photoSlots: { flexDirection: 'row', gap: 10, marginTop: 12 },
   photoSlot: { width: 76, height: 76, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.borderMed, backgroundColor: theme.bgSurface, alignItems: 'center', justifyContent: 'center' },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16, paddingBottom: 22, borderTopWidth: 1, borderTopColor: theme.borderLight, backgroundColor: theme.bgPrimary },
-  submitButton: { height: 50, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
+  photoPreviewWrap: { width: 76, height: 76, borderRadius: 12, overflow: 'hidden', position: 'relative' },
+  photoPreview: { width: '100%', height: '100%' },
+  removePhotoButton: { position: 'absolute', right: 5, top: 5, width: 20, height: 20, borderRadius: 10, backgroundColor: theme.error, alignItems: 'center', justifyContent: 'center' },
+  photoSlotText: { color: theme.textMuted, fontFamily: 'Inter', fontSize: 10, fontWeight: '700', marginTop: 3 },
+  visibilityCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 14, padding: 12, marginTop: 14 },
+  visibilityText: { flex: 1, color: theme.textSecond, fontFamily: 'Inter', fontSize: 12, lineHeight: 18 },
+  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16, paddingBottom: 22, borderTopWidth: 1, borderTopColor: theme.borderLight, backgroundColor: theme.bgPrimary, flexDirection: 'row', gap: 10 },
+  submitButton: { flex: 1, height: 50, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
+  deleteButton: { width: 96, height: 50, borderRadius: 12, borderWidth: 1, borderColor: theme.error, alignItems: 'center', justifyContent: 'center' },
+  deleteButtonText: { color: theme.error, fontFamily: 'Inter', fontSize: 14, fontWeight: '800' },
   disabledButton: { opacity: 0.55 },
   submitText: { color: '#FFFFFF', fontFamily: 'Inter', fontSize: 15, fontWeight: '800' },
 });

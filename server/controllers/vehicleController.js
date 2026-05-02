@@ -79,7 +79,7 @@ exports.getAllVehicles = async (req, res) => {
     if (type) query.type = type;
     if (isAvailable !== undefined) query.isAvailable = isAvailable === 'true';
 
-    const vehicles = await Vehicle.find(query).populate('driver', 'name avatar isVerified');
+    const vehicles = await Vehicle.find(query).populate('driver', 'name avatar isVerified rating totalRatings');
     
     res.status(200).json({ success: true, count: vehicles.length, vehicles });
   } catch (error) {

@@ -2,19 +2,21 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure directory exists relative to the server root
-const uploadDir = path.join(__dirname, '../uploads/vehicles');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const ensureUploadDir = (folder) => {
+  const uploadDir = path.join(__dirname, `../uploads/${folder}`);
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  return uploadDir;
+};
 
-// Set storage engine
-const storage = multer.diskStorage({
+const createStorage = (folder, prefix) => multer.diskStorage({
   destination: function(req, file, cb) {
-    cb(null, uploadDir); 
+    cb(null, ensureUploadDir(folder));
   },
   filename: function(req, file, cb) {
-    cb(null, 'vehicle-' + Date.now() + path.extname(file.originalname));
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    cb(null, `${prefix}-${unique}${path.extname(file.originalname)}`);
   }
 });
 
@@ -31,13 +33,16 @@ function checkFileType(file, cb) {
   }
 }
 
-// Init upload
-const upload = multer({
-  storage: storage,
+const createUpload = (folder, prefix) => multer({
+  storage: createStorage(folder, prefix),
   limits: { fileSize: 5000000 }, // 5MB limit
   fileFilter: function(req, file, cb) {
     checkFileType(file, cb);
   }
 });
 
-module.exports = upload;
+const vehicleUpload = createUpload('vehicles', 'vehicle');
+const reviewUpload = createUpload('reviews', 'review');
+
+module.exports = vehicleUpload;
+module.exports.reviewUpload = reviewUpload;

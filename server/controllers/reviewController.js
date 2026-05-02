@@ -107,6 +107,27 @@ exports.getAdminReviews = async (req, res) => {
   }
 };
 
+exports.getMyReviews = async (req, res) => {
+  try {
+    const reviews = await populateReview(
+      Review.find({ traveler: req.user.id }).sort({ createdAt: -1 })
+    );
+    res.status(200).json({ success: true, count: reviews.length, reviews });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to load your reviews', error: error.message });
+  }
+};
+
+exports.uploadReviewPhotos = async (req, res) => {
+  try {
+    const files = req.files || [];
+    const photos = files.map((file) => `/uploads/reviews/${file.filename}`);
+    res.status(201).json({ success: true, photos });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to upload review photos', error: error.message });
+  }
+};
+
 exports.updateReview = async (req, res) => {
   try {
     const review = await Review.findOne({ _id: req.params.id, traveler: req.user.id });

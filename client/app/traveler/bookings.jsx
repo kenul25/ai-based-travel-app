@@ -36,13 +36,23 @@ export default function TravelerBookingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [reviewsByBooking, setReviewsByBooking] = useState({});
 
   const fetchBookings = useCallback(async ({ showLoader = false } = {}) => {
     try {
       if (showLoader) setLoading(true);
       setError('');
-      const res = await api.get('/bookings/my-bookings');
-      setBookings(res.data.bookings || []);
+      const [bookingRes, reviewRes] = await Promise.all([
+        api.get('/bookings/my-bookings'),
+        api.get('/reviews/my'),
+      ]);
+      setBookings(bookingRes.data.bookings || []);
+      const reviewMap = {};
+      (reviewRes.data?.reviews || []).forEach((review) => {
+        const bookingId = review.booking?._id || review.booking;
+        if (bookingId) reviewMap[bookingId] = review;
+      });
+      setReviewsByBooking(reviewMap);
     } catch (err) {
       setError(err.response?.data?.message || 'Could not load bookings.');
     } finally {
@@ -79,6 +89,7 @@ export default function TravelerBookingsScreen() {
     const statusStyle = statusStyles[status] || statusStyles.pending;
     const vehicleName = [item.vehicle?.brand, item.vehicle?.model].filter(Boolean).join(' ') || item.vehicle?.type || 'Vehicle';
     const tripTitle = item.trip?.destinationArea || 'Trip booking';
+    const existingReview = reviewsByBooking[item._id];
 
     return (
       <View style={styles.bookingCard}>
@@ -130,8 +141,8 @@ export default function TravelerBookingsScreen() {
 
         {item.status === 'completed' ? (
           <TouchableOpacity style={styles.reviewButton} onPress={() => router.push(`/traveler/review/${item._id}`)}>
-            <Ionicons name="star-outline" size={17} color="#92600A" />
-            <Text style={styles.reviewButtonText}>Rate and review this trip</Text>
+            <Ionicons name={existingReview ? 'create-outline' : 'star-outline'} size={17} color="#92600A" />
+            <Text style={styles.reviewButtonText}>{existingReview ? 'Edit your review' : 'Rate and review this trip'}</Text>
             <Ionicons name="chevron-forward" size={16} color="#92600A" />
           </TouchableOpacity>
         ) : null}
