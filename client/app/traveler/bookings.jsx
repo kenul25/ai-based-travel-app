@@ -127,6 +127,14 @@ export default function TravelerBookingsScreen() {
             ) : null}
           </View>
         </View>
+
+        {item.status === 'completed' ? (
+          <TouchableOpacity style={styles.reviewButton} onPress={() => router.push(`/traveler/review/${item._id}`)}>
+            <Ionicons name="star-outline" size={17} color="#92600A" />
+            <Text style={styles.reviewButtonText}>Rate and review this trip</Text>
+            <Ionicons name="chevron-forward" size={16} color="#92600A" />
+          </TouchableOpacity>
+        ) : null}
       </View>
     );
   };
@@ -226,6 +234,8 @@ const createStyles = (theme) => StyleSheet.create({
   unpaidText: { color: '#92600A', fontSize: 11, fontFamily: 'Inter', fontWeight: '700', textTransform: 'capitalize' },
   openTripBtn: { flexDirection: 'row', alignItems: 'center' },
   openTripText: { color: theme.primary, fontSize: 12, fontFamily: 'Inter', fontWeight: '700', marginRight: 2 },
+  reviewButton: { minHeight: 42, marginTop: 12, borderRadius: 10, backgroundColor: theme.amberLight, borderWidth: 1, borderColor: theme.amber, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  reviewButtonText: { color: theme.amberDark, fontFamily: 'Inter', fontSize: 12, fontWeight: '800' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   emptyTitle: { color: theme.textPrimary, fontSize: 17, fontFamily: 'Inter', fontWeight: '700' },
