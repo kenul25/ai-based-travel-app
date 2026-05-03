@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
+import KeyboardAwareScrollView from '../../../components/common/KeyboardAwareScrollView';
 
 const ratingLabels = {
   1: 'Poor',
@@ -200,7 +201,7 @@ export default function SubmitReviewScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color={theme.textPrimary} />
@@ -293,7 +294,7 @@ export default function SubmitReviewScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {!loading && !error ? (
         <View style={styles.footer}>
@@ -313,6 +314,7 @@ export default function SubmitReviewScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 50, paddingBottom: 112 },
   topBar: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   backButton: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, alignItems: 'center', justifyContent: 'center' },

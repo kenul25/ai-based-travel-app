@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { themeOptions, useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 import {
   normalizePhoneNumber,
   validateEmail,
@@ -286,7 +287,7 @@ export default function DriverProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
@@ -366,7 +367,7 @@ export default function DriverProfileScreen() {
           <Ionicons name="log-out-outline" size={18} color={theme.error} />
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <View style={styles.bottomTabBar}>{tabs.map(renderTab)}</View>
     </View>
@@ -375,6 +376,7 @@ export default function DriverProfileScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 58, paddingBottom: 96 },
   profileHeader: { alignItems: 'center', marginBottom: 18 },
   avatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: theme.primaryLight, alignItems: 'center', justifyContent: 'center', position: 'relative' },

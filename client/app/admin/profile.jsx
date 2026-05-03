@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AdminTabBar from '../../components/admin/AdminTabBar';
@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { themeOptions, useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 import {
   normalizePhoneNumber,
   validateEmail,
@@ -257,7 +258,7 @@ export default function AdminProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color={theme.textPrimary} />
@@ -353,7 +354,7 @@ export default function AdminProfileScreen() {
           <Ionicons name="log-out-outline" size={18} color={theme.error} />
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <AdminTabBar />
     </View>
@@ -362,6 +363,7 @@ export default function AdminProfileScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 50, paddingBottom: 98 },
   topBar: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   backButton: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, alignItems: 'center', justifyContent: 'center' },

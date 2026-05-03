@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../services/api';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 
 export default function AddVehicleScreen() {
   const router = useRouter();
@@ -117,7 +118,7 @@ export default function AddVehicleScreen() {
           <Text style={styles.loadingText}>Loading vehicle...</Text>
         </View>
       ) : (
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         
         {/* Image Picker */}
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
@@ -200,7 +201,7 @@ export default function AddVehicleScreen() {
           {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitBtnText}>{isEditing ? 'Update vehicle' : 'Save vehicle'}</Text>}
         </TouchableOpacity>
 
-      </ScrollView>
+      </KeyboardAwareScrollView>
       )}
     </View>
   );
@@ -208,6 +209,7 @@ export default function AddVehicleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+  scrollArea: { flex: 1 },
   header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
   headerTitle: { fontSize: 17, fontFamily: 'Inter', fontWeight: '600', color: '#0F172A' },
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },

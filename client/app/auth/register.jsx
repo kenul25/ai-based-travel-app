@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import Input from '../../components/common/Input';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
 import {
   normalizePhoneNumber,
@@ -72,12 +73,9 @@ export default function RegisterScreen() {
   );
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: theme.bgPrimary }]} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={[styles.container, { backgroundColor: theme.bgPrimary }]}>
       <TopBar />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
 
         {/* Role Selector */}
         <View style={styles.roleContainer}>
@@ -178,13 +176,14 @@ export default function RegisterScreen() {
           </Text>
         </TouchableOpacity>
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scrollArea: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16 },
   backButton: { padding: 4 },
   topBarTitle: { fontSize: 17, fontWeight: '600' },

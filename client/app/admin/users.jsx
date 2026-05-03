@@ -17,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import PasswordStrengthMeter from '../../components/common/PasswordStrengthMeter';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 import {
   normalizePhoneNumber,
   validateEmail,
@@ -339,7 +340,7 @@ export default function AdminUsersScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>Admin dashboard</Text>
@@ -395,94 +396,96 @@ export default function AdminUsersScreen() {
             )}
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <Modal transparent visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{form._id ? 'Edit admin' : 'Add new admin'}</Text>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={20} color={theme.textPrimary} />
+          <KeyboardAwareScrollView style={styles.modalKeyboardArea} contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.modalSheet}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{form._id ? 'Edit admin' : 'Add new admin'}</Text>
+                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                  <Ionicons name="close" size={20} color={theme.textPrimary} />
+                </TouchableOpacity>
+              </View>
+
+              {renderModalInput({
+                icon: 'person-outline',
+                value: form.name,
+                onChangeText: (value) => setField('name', value),
+                placeholder: 'Full name',
+                error: getModalError('name'),
+                valid: touched.name && !modalErrors.name,
+              })}
+              {renderModalInput({
+                icon: 'mail-outline',
+                value: form.email,
+                onChangeText: (value) => setField('email', value),
+                placeholder: 'Email Address',
+                autoCapitalize: 'none',
+                keyboardType: 'email-address',
+                error: getModalError('email'),
+                valid: touched.email && !modalErrors.email,
+              })}
+              {renderModalInput({
+                icon: 'call-outline',
+                value: form.phone,
+                onChangeText: (value) => setField('phone', value),
+                placeholder: 'Phone number',
+                keyboardType: 'number-pad',
+                error: getModalError('phone'),
+                valid: touched.phone && !modalErrors.phone,
+              })}
+
+              <View style={styles.roleSelector}>
+                {['admin', 'superadmin'].map((role) => {
+                  const disabled = role === 'superadmin' && !isSuperAdmin;
+                  const selected = form.role === role;
+                  return (
+                    <TouchableOpacity
+                      key={role}
+                      disabled={disabled}
+                      style={[selected ? styles.roleOptionActive : styles.roleOption, disabled && styles.disabledOption]}
+                      onPress={() => setField('role', role)}
+                    >
+                      <Text style={selected ? styles.roleOptionTextActive : styles.roleOptionText}>
+                        {role === 'superadmin' ? 'Super Admin' : 'Admin'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {renderModalInput({
+                icon: 'lock-closed-outline',
+                value: form.password,
+                onChangeText: (value) => setField('password', value),
+                placeholder: form._id ? 'New password optional' : 'Password',
+                secureTextEntry: true,
+                showToggle: true,
+                isVisible: showPassword,
+                onToggle: () => setShowPassword((current) => !current),
+                error: getModalError('password'),
+              })}
+              <PasswordStrengthMeter password={form.password} />
+              {renderModalInput({
+                icon: 'lock-closed-outline',
+                value: form.confirmPassword,
+                onChangeText: (value) => setField('confirmPassword', value),
+                placeholder: 'Confirm password',
+                secureTextEntry: true,
+                showToggle: true,
+                isVisible: showConfirmPassword,
+                onToggle: () => setShowConfirmPassword((current) => !current),
+                error: getModalError('confirmPassword'),
+              })}
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+              <TouchableOpacity style={styles.saveButton} onPress={submitAdmin} disabled={saving}>
+                {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveButtonText}>{form._id ? 'Save admin' : 'Create admin account'}</Text>}
               </TouchableOpacity>
             </View>
-
-            {renderModalInput({
-              icon: 'person-outline',
-              value: form.name,
-              onChangeText: (value) => setField('name', value),
-              placeholder: 'Full name',
-              error: getModalError('name'),
-              valid: touched.name && !modalErrors.name,
-            })}
-            {renderModalInput({
-              icon: 'mail-outline',
-              value: form.email,
-              onChangeText: (value) => setField('email', value),
-              placeholder: 'Email Address',
-              autoCapitalize: 'none',
-              keyboardType: 'email-address',
-              error: getModalError('email'),
-              valid: touched.email && !modalErrors.email,
-            })}
-            {renderModalInput({
-              icon: 'call-outline',
-              value: form.phone,
-              onChangeText: (value) => setField('phone', value),
-              placeholder: 'Phone number',
-              keyboardType: 'number-pad',
-              error: getModalError('phone'),
-              valid: touched.phone && !modalErrors.phone,
-            })}
-
-            <View style={styles.roleSelector}>
-              {['admin', 'superadmin'].map((role) => {
-                const disabled = role === 'superadmin' && !isSuperAdmin;
-                const selected = form.role === role;
-                return (
-                  <TouchableOpacity
-                    key={role}
-                    disabled={disabled}
-                    style={[selected ? styles.roleOptionActive : styles.roleOption, disabled && styles.disabledOption]}
-                    onPress={() => setField('role', role)}
-                  >
-                    <Text style={selected ? styles.roleOptionTextActive : styles.roleOptionText}>
-                      {role === 'superadmin' ? 'Super Admin' : 'Admin'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {renderModalInput({
-              icon: 'lock-closed-outline',
-              value: form.password,
-              onChangeText: (value) => setField('password', value),
-              placeholder: form._id ? 'New password optional' : 'Password',
-              secureTextEntry: true,
-              showToggle: true,
-              isVisible: showPassword,
-              onToggle: () => setShowPassword((current) => !current),
-              error: getModalError('password'),
-            })}
-            <PasswordStrengthMeter password={form.password} />
-            {renderModalInput({
-              icon: 'lock-closed-outline',
-              value: form.confirmPassword,
-              onChangeText: (value) => setField('confirmPassword', value),
-              placeholder: 'Confirm password',
-              secureTextEntry: true,
-              showToggle: true,
-              isVisible: showConfirmPassword,
-              onToggle: () => setShowConfirmPassword((current) => !current),
-              error: getModalError('confirmPassword'),
-            })}
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <TouchableOpacity style={styles.saveButton} onPress={submitAdmin} disabled={saving}>
-              {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveButtonText}>{form._id ? 'Save admin' : 'Create admin account'}</Text>}
-            </TouchableOpacity>
-          </View>
+          </KeyboardAwareScrollView>
         </View>
       </Modal>
 
@@ -493,6 +496,7 @@ export default function AdminUsersScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 58, paddingBottom: 94 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 },
   eyebrow: { color: theme.textMuted, fontFamily: 'Inter', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
@@ -541,6 +545,8 @@ const createStyles = (theme) => StyleSheet.create({
   emptyTitle: { color: theme.textPrimary, fontFamily: 'Inter', fontSize: 15, fontWeight: '800', marginTop: 8 },
   emptyText: { color: theme.textSecond, fontFamily: 'Inter', fontSize: 12, marginTop: 3, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.35)', justifyContent: 'flex-end' },
+  modalKeyboardArea: { flex: 1, width: '100%' },
+  modalScrollContent: { flexGrow: 1, justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: theme.bgPrimary, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, paddingBottom: 26 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   modalTitle: { color: theme.textPrimary, fontFamily: 'Inter', fontSize: 18, fontWeight: '800' },

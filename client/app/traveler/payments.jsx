@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 
 const tabs = [
   { label: 'Home', icon: 'home-outline', route: '/traveler/home' },
@@ -457,9 +458,9 @@ export default function TravelerPaymentsScreen() {
           <Text style={styles.loadingText}>Loading wallet...</Text>
         </View>
       ) : (
-        <ScrollView
+        <KeyboardAwareScrollView
+          style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadPayments(); }} tintColor="#0C6EFD" />}
         >
           {renderStats()}
@@ -482,7 +483,7 @@ export default function TravelerPaymentsScreen() {
           {activeSection === 'checkout' && renderCheckout()}
           {activeSection === 'cards' && renderCards()}
           {activeSection === 'history' && renderHistory()}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
 
       <View style={styles.bottomTabBar}>{tabs.map(renderTab)}</View>
@@ -492,6 +493,7 @@ export default function TravelerPaymentsScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.borderLight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgPrimary },
   eyebrow: { fontSize: 12, color: theme.textMuted, fontFamily: 'Inter' },
   title: { fontSize: 24, fontFamily: 'Inter', fontWeight: '700', color: theme.textPrimary },

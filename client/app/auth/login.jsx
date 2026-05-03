@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import Input from '../../components/common/Input';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -32,11 +33,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: theme.bgPrimary }]} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardAwareScrollView
+      style={[styles.container, { backgroundColor: theme.bgPrimary }]}
+      contentContainerStyle={styles.scrollContent}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
         
         {/* Header Section */}
         <View style={styles.header}>
@@ -98,8 +98,7 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }
 

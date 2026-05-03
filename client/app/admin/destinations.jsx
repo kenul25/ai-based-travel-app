@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AdminTabBar from '../../components/admin/AdminTabBar';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 
 export default function AdminDestinationsScreen() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function AdminDestinationsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.eyebrow}>Admin dashboard</Text>
@@ -142,7 +143,7 @@ export default function AdminDestinationsScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       <AdminTabBar />
     </View>
   );
@@ -150,6 +151,7 @@ export default function AdminDestinationsScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 58, paddingBottom: 94 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 },
   headerText: { flex: 1 },

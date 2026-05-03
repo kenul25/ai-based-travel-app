@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 
 const categories = ['Beach', 'Culture', 'Nature', 'Adventure', 'Wildlife', 'Food', 'Wellness', 'City', 'History'];
 
@@ -141,7 +142,7 @@ export default function AddDestinationScreen() {
           <Text style={styles.loadingText}>Loading destination...</Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <KeyboardAwareScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
           <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
             {form.imageUri ? (
               <Image source={{ uri: form.imageUri }} style={styles.previewImage} />
@@ -196,7 +197,7 @@ export default function AddDestinationScreen() {
           <TouchableOpacity style={styles.saveButton} onPress={submitDestination} disabled={saving}>
             {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>{isEditing ? 'Update destination' : 'Save destination'}</Text>}
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
     </View>
   );
@@ -204,6 +205,7 @@ export default function AddDestinationScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   header: { paddingTop: 58, paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: theme.borderLight, flexDirection: 'row', alignItems: 'center', gap: 12 },
   closeButton: { width: 38, height: 38, borderRadius: 10, borderWidth: 1, borderColor: theme.borderLight, alignItems: 'center', justifyContent: 'center' },
   headerText: { flex: 1 },

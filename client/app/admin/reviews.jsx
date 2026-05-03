@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import AdminTabBar from '../../components/admin/AdminTabBar';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
+import KeyboardAwareScrollView from '../../components/common/KeyboardAwareScrollView';
 
 const formatDate = (value) => {
   if (!value) return 'Recently';
@@ -83,8 +84,8 @@ export default function AdminReviewsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
+      <KeyboardAwareScrollView
+        style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadReviews({ refreshing: true })} tintColor={theme.primary} />}
       >
@@ -171,7 +172,7 @@ export default function AdminReviewsScreen() {
             <Text style={styles.emptyText}>Completed trip reviews will appear here for moderation.</Text>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       <AdminTabBar />
     </View>
   );
@@ -179,6 +180,7 @@ export default function AdminReviewsScreen() {
 
 const createStyles = (theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
+  scrollArea: { flex: 1 },
   scrollContent: { padding: 16, paddingTop: 58, paddingBottom: 94 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   eyebrow: { color: theme.textMuted, fontFamily: 'Inter', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
