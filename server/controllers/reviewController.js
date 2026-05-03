@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Review = require('../models/Review');
 const User = require('../models/User');
+const { deleteCloudinaryAssets } = require('../utils/cloudinaryAssets');
 
 const populateReview = (query) => query
   .populate('traveler', 'name email')
@@ -121,7 +122,7 @@ exports.getMyReviews = async (req, res) => {
 exports.uploadReviewPhotos = async (req, res) => {
   try {
     const files = req.files || [];
-    const photos = files.map((file) => `/uploads/reviews/${file.filename}`);
+    const photos = files.map((file) => file.path);
     res.status(201).json({ success: true, photos });
   } catch (error) {
     res.status(500).json({ message: 'Failed to upload review photos', error: error.message });
@@ -144,9 +145,14 @@ exports.updateReview = async (req, res) => {
       review.rating = numericRating;
     }
     if (req.body.comment !== undefined) review.comment = String(req.body.comment).trim();
+    const previousPhotos = [...(review.photos || [])];
     if (Array.isArray(req.body.photos)) review.photos = req.body.photos;
 
     await review.save();
+    if (Array.isArray(req.body.photos)) {
+      const removedPhotos = previousPhotos.filter((photo) => !review.photos.includes(photo));
+      await deleteCloudinaryAssets(removedPhotos);
+    }
     await updateDriverRating(review.driver);
     const populatedReview = await populateReview(Review.findById(review._id));
     res.status(200).json({ success: true, review: populatedReview });
@@ -180,7 +186,9 @@ exports.deleteReview = async (req, res) => {
     if (!review) return res.status(404).json({ message: 'Review not found' });
 
     const driverId = review.driver;
+    const photosToDelete = [...(review.photos || [])];
     await review.deleteOne();
+    await deleteCloudinaryAssets(photosToDelete);
     await updateDriverRating(driverId);
 
     res.status(200).json({ success: true, message: 'Review deleted' });

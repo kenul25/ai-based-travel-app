@@ -1,4 +1,5 @@
 const { Destination, DESTINATION_CATEGORIES } = require('../models/Destination');
+const { deleteCloudinaryAsset } = require('../utils/cloudinaryAssets');
 
 const parseBoolean = (value, fallback = false) => {
   if (typeof value === 'boolean') return value;
@@ -22,7 +23,7 @@ const normalizeCategories = (value) => {
 
 const buildImageUrl = (req) => {
   if (!req.file) return undefined;
-  return `${req.protocol}://${req.get('host')}/uploads/destinations/${req.file.filename}`;
+  return req.file.path;
 };
 
 const validateDestinationPayload = ({ name, description, categories }) => {
@@ -113,6 +114,7 @@ exports.updateDestination = async (req, res) => {
   try {
     const destination = await Destination.findById(req.params.id);
     if (!destination) return res.status(404).json({ message: 'Destination not found' });
+    const previousImage = destination.image;
 
     const categories = normalizeCategories(req.body.categories);
     validateDestinationPayload({ name: req.body.name, description: req.body.description, categories });
@@ -127,6 +129,9 @@ exports.updateDestination = async (req, res) => {
     if (req.file) destination.image = buildImageUrl(req);
 
     await destination.save();
+    if (req.file && previousImage && previousImage !== destination.image) {
+      await deleteCloudinaryAsset(previousImage);
+    }
     res.status(200).json({ success: true, destination });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message: error.message || 'Failed to update destination' });
@@ -138,7 +143,9 @@ exports.deleteDestination = async (req, res) => {
     const destination = await Destination.findById(req.params.id);
     if (!destination) return res.status(404).json({ message: 'Destination not found' });
 
+    const imageToDelete = destination.image;
     await destination.deleteOne();
+    await deleteCloudinaryAsset(imageToDelete);
     res.status(200).json({ success: true, message: 'Destination deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete destination', error: error.message });

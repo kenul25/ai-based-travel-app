@@ -1,5 +1,6 @@
 const Vehicle = require('../models/Vehicle');
 const Booking = require('../models/Booking');
+const { deleteCloudinaryAssets } = require('../utils/cloudinaryAssets');
 
 const vehicleTypes = ['Car', 'Van', 'Bus', 'Tuk-Tuk'];
 
@@ -41,8 +42,7 @@ exports.addVehicle = async (req, res) => {
     // Handle Multer payload
     const images = [];
     if (req.file) {
-      const imageUrl = `${req.protocol}://${req.get('host')}/uploads/vehicles/${req.file.filename}`;
-      images.push(imageUrl);
+      images.push(req.file.path);
     }
 
     const vehicle = await Vehicle.create({
@@ -91,6 +91,7 @@ exports.getVehicleById = async (req, res) => {
   try {
     const vehicle = await Vehicle.findOne({ _id: req.params.id, driver: req.user.id });
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    const previousImages = [...(vehicle.images || [])];
 
     res.status(200).json({ success: true, vehicle });
   } catch (error) {
@@ -118,10 +119,13 @@ exports.updateVehicle = async (req, res) => {
     vehicle.pricePerDay = Number(pricePerDay);
 
     if (req.file) {
-      vehicle.images = [`${req.protocol}://${req.get('host')}/uploads/vehicles/${req.file.filename}`];
+      vehicle.images = [req.file.path];
     }
 
     await vehicle.save();
+    if (req.file) {
+      await deleteCloudinaryAssets(previousImages.filter((image) => image !== req.file.path));
+    }
     res.status(200).json({ success: true, vehicle });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : 'Server Error', error: error.message });
@@ -142,7 +146,9 @@ exports.deleteVehicle = async (req, res) => {
       return res.status(400).json({ message: 'Cannot delete a vehicle with pending or accepted bookings' });
     }
 
+    const imagesToDelete = [...(vehicle.images || [])];
     await vehicle.deleteOne();
+    await deleteCloudinaryAssets(imagesToDelete);
     res.status(200).json({ success: true, message: 'Vehicle deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });

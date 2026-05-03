@@ -1,23 +1,16 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-const ensureUploadDir = (folder) => {
-  const uploadDir = path.join(__dirname, `../uploads/${folder}`);
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-  return uploadDir;
-};
-
-const createStorage = (folder, prefix) => multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, ensureUploadDir(folder));
+const createStorage = (folder) => new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: `travel-app/${folder}`,
+    allowed_formats: ['jpeg', 'jpg', 'png', 'webp'],
+    resource_type: 'image',
+    transformation: [{ quality: 'auto', fetch_format: 'auto' }],
   },
-  filename: function(req, file, cb) {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    cb(null, `${prefix}-${unique}${path.extname(file.originalname)}`);
-  }
 });
 
 // Check file type
@@ -33,18 +26,20 @@ function checkFileType(file, cb) {
   }
 }
 
-const createUpload = (folder, prefix) => multer({
-  storage: createStorage(folder, prefix),
+const createUpload = (folder) => multer({
+  storage: createStorage(folder),
   limits: { fileSize: 5000000 }, // 5MB limit
   fileFilter: function(req, file, cb) {
     checkFileType(file, cb);
   }
 });
 
-const vehicleUpload = createUpload('vehicles', 'vehicle');
-const reviewUpload = createUpload('reviews', 'review');
-const destinationUpload = createUpload('destinations', 'destination');
+const vehicleUpload = createUpload('vehicles');
+const reviewUpload = createUpload('reviews');
+const destinationUpload = createUpload('destinations');
+const profileUpload = createUpload('profiles');
 
 module.exports = vehicleUpload;
 module.exports.reviewUpload = reviewUpload;
 module.exports.destinationUpload = destinationUpload;
+module.exports.profileUpload = profileUpload;

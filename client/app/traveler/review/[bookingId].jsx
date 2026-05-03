@@ -142,7 +142,7 @@ export default function SubmitReviewScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.8,
       allowsMultipleSelection: true,
       selectionLimit: remaining,
