@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,7 @@ const emptyCardForm = {
   cardHolderName: '',
   cardNumber: '',
   expiry: '',
+  cvv: '',
   nickname: '',
 };
 
@@ -50,6 +51,41 @@ const parseExpiry = (expiry) => {
   };
 };
 
+const formatExpiry = (month, year) => {
+  const cleanMonth = month.replace(/\D/g, '').slice(0, 2);
+  const cleanYear = year.replace(/\D/g, '').slice(0, 2);
+  return cleanMonth || cleanYear ? `${cleanMonth}/${cleanYear}` : '';
+};
+
+const isValidCardNumber = (cardNumber) => {
+  const digits = cardNumber.replace(/\D/g, '');
+  if (digits.length < 13 || digits.length > 19) return false;
+
+  let sum = 0;
+  let shouldDouble = false;
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    let digit = Number(digits[index]);
+    if (shouldDouble) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    shouldDouble = !shouldDouble;
+  }
+
+  return sum % 10 === 0;
+};
+
+const isValidExpiry = (expiry) => {
+  const { expiryMonth, expiryYear } = parseExpiry(expiry);
+  if (!expiryMonth || !expiryYear || expiryMonth < 1 || expiryMonth > 12) return false;
+
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  return expiryYear > currentYear || (expiryYear === currentYear && expiryMonth >= currentMonth);
+};
+
 export default function TravelerPaymentsScreen() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -65,6 +101,7 @@ export default function TravelerPaymentsScreen() {
   const [selectedMethod, setSelectedMethod] = useState('saved_card');
   const [selectedCardId, setSelectedCardId] = useState('');
   const [cardForm, setCardForm] = useState(emptyCardForm);
+  const expiryYearRef = useRef(null);
   const [editingNicknameId, setEditingNicknameId] = useState('');
   const [nicknameDraft, setNicknameDraft] = useState('');
 
@@ -134,10 +171,37 @@ export default function TravelerPaymentsScreen() {
     };
   };
 
+  const updateExpiryMonth = (value) => {
+    const month = value.replace(/\D/g, '').slice(0, 2);
+    const year = cardForm.expiry.replace(/\D/g, '').slice(2, 4);
+    setCardForm((current) => ({ ...current, expiry: formatExpiry(month, year) }));
+    if (month.length === 2) expiryYearRef.current?.focus();
+  };
+
+  const updateExpiryYear = (value) => {
+    const digits = cardForm.expiry.replace(/\D/g, '');
+    const month = digits.slice(0, 2);
+    const year = value.replace(/\D/g, '').slice(0, 2);
+    setCardForm((current) => ({ ...current, expiry: formatExpiry(month, year) }));
+  };
+
   const saveCard = async ({ stayOnScreen = true } = {}) => {
     const payload = buildCardPayload();
-    if (!payload.cardHolderName || payload.last4.length !== 4 || !payload.expiryMonth || !payload.expiryYear) {
-      Alert.alert('Invalid card', 'Enter card holder, card number, and expiry as MM/YY.');
+    const cvv = cardForm.cvv.replace(/\D/g, '');
+    if (!payload.cardHolderName) {
+      Alert.alert('Invalid card', 'Enter the card holder name.');
+      return null;
+    }
+    if (!isValidCardNumber(cardForm.cardNumber)) {
+      Alert.alert('Invalid card', 'Enter a valid card number.');
+      return null;
+    }
+    if (!isValidExpiry(cardForm.expiry)) {
+      Alert.alert('Invalid expiry', 'Enter a valid future expiry date as MM/YY.');
+      return null;
+    }
+    if (!/^\d{3,4}$/.test(cvv)) {
+      Alert.alert('Invalid CVV', 'Enter the 3 or 4 digit security code.');
       return null;
     }
 
@@ -263,9 +327,14 @@ export default function TravelerPaymentsScreen() {
       <TextInput style={styles.input} placeholder="Card holder name" value={cardForm.cardHolderName} onChangeText={(value) => setCardForm((current) => ({ ...current, cardHolderName: value }))} />
       <TextInput style={styles.input} placeholder="Card number" value={cardForm.cardNumber} onChangeText={(value) => setCardForm((current) => ({ ...current, cardNumber: value }))} keyboardType="number-pad" maxLength={19} />
       <View style={styles.inputRow}>
-        <TextInput style={[styles.input, styles.inputHalf]} placeholder="MM/YY" value={cardForm.expiry} onChangeText={(value) => setCardForm((current) => ({ ...current, expiry: value }))} keyboardType="number-pad" maxLength={5} />
-        <TextInput style={[styles.input, styles.inputHalf]} placeholder="Nickname" value={cardForm.nickname} onChangeText={(value) => setCardForm((current) => ({ ...current, nickname: value }))} />
+        <View style={[styles.input, styles.inputHalf, styles.expiryInput]}>
+          <TextInput style={styles.expiryPartInput} placeholder="MM" value={cardForm.expiry.replace(/\D/g, '').slice(0, 2)} onChangeText={updateExpiryMonth} keyboardType="number-pad" maxLength={2} />
+          <Text style={styles.expirySlash}>/</Text>
+          <TextInput ref={expiryYearRef} style={styles.expiryPartInput} placeholder="YY" value={cardForm.expiry.replace(/\D/g, '').slice(2, 4)} onChangeText={updateExpiryYear} keyboardType="number-pad" maxLength={2} />
+        </View>
+        <TextInput style={[styles.input, styles.inputHalf]} placeholder="CVV" value={cardForm.cvv} onChangeText={(value) => setCardForm((current) => ({ ...current, cvv: value.replace(/\D/g, '').slice(0, 4) }))} keyboardType="number-pad" maxLength={4} secureTextEntry />
       </View>
+      <TextInput style={styles.input} placeholder="Nickname" value={cardForm.nickname} onChangeText={(value) => setCardForm((current) => ({ ...current, nickname: value }))} />
       <View style={styles.securityNotice}>
         <Ionicons name="lock-closed-outline" size={14} color="#16A34A" />
         <Text style={styles.securityText}>Only masked card details are sent to the server.</Text>
@@ -551,6 +620,9 @@ const createStyles = (theme) => StyleSheet.create({
   input: { minHeight: 46, borderWidth: 1, borderColor: theme.borderLight, backgroundColor: theme.bgSurface, borderRadius: 12, paddingHorizontal: 12, color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter', marginBottom: 10 },
   inputRow: { flexDirection: 'row', gap: 10 },
   inputHalf: { flex: 1 },
+  expiryInput: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 },
+  expiryPartInput: { flex: 1, color: theme.textPrimary, fontSize: 14, fontFamily: 'Inter', textAlign: 'center', paddingVertical: 0 },
+  expirySlash: { color: theme.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: '700', paddingHorizontal: 2 },
   securityNotice: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   securityText: { color: theme.textSecondary, fontSize: 11, fontFamily: 'Inter', marginLeft: 6, flex: 1 },
   secondaryFullButton: { height: 46, borderRadius: 12, borderWidth: 1, borderColor: theme.primary, backgroundColor: theme.bgPrimary, alignItems: 'center', justifyContent: 'center' },
